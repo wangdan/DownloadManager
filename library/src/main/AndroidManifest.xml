@@ -1,0 +1,72 @@
+<manifest package="com.tcl.downloader"
+          xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.ACCESS_DOWNLOAD_MANAGER"/>
+    <uses-permission android:name="android.permission.SEND_DOWNLOAD_COMPLETED_INTENTS"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.ACCESS_ALL_DOWNLOADS"/>
+    <uses-permission android:name="android.permission.CLEAR_APP_CACHE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.UPDATE_APP_OPS_STATS"/>
+
+    <application android:allowBackup="true"
+                 android:supportsRtl="true">
+        <provider android:name=".provider.DownloadProvider"
+                  android:authorities="tcldownloads" android:exported="true">
+            <!-- Anyone can access /my_downloads, the provider internally restricts access by UID for
+                 these URIs -->
+            <path-permission android:pathPrefix="/my_downloads"
+                             android:permission="android.permission.INTERNET"/>
+            <!-- to access /all_downloads, ACCESS_ALL_DOWNLOADS permission is required -->
+            <path-permission android:pathPrefix="/all_downloads"
+                             android:permission="android.permission.ACCESS_ALL_DOWNLOADS"/>
+            <!-- Temporary, for backwards compatibility -->
+            <path-permission android:pathPrefix="/download"
+                             android:permission="android.permission.INTERNET"/>
+            <!-- Apps with access to /all_downloads/... can grant permissions, allowing them to share
+                 downloaded files with other viewers -->
+            <grant-uri-permission android:pathPrefix="/all_downloads/"/>
+            <!-- Apps with access to /my_downloads/... can grant permissions, allowing them to share
+                 downloaded files with other viewers -->
+            <grant-uri-permission android:pathPrefix="/my_downloads/"/>
+        </provider>
+
+        <provider
+            android:name=".provider.DownloadStorageProvider"
+            android:authorities="tcl.com.android.providers.downloads.documents"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER"/>
+            </intent-filter>
+        </provider>
+
+        <service
+            android:name=".provider.DownloadService"
+            android:permission="android.permission.ACCESS_DOWNLOAD_MANAGER"/>
+
+        <service
+            android:name=".provider.DownloadIdleService"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE">
+        </service>
+
+        <receiver android:name=".provider.DownloadReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+                <action android:name="android.intent.action.UID_REMOVED"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_MOUNTED"/>
+                <data android:scheme="file"/>
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>
