@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">DownloadManager</string>
+
+    <string name="download_status_no">安装</string>
+    <string name="download_status_pause">继续</string>
+    <string name="download_status_start">暂停</string>
+    <string name="download_status_done">安装</string>
+    <string name="download_status_installing">安装中</string>
+    <string name="download_status_pending">等待</string>
+
+    <string name="unit_person">%s次安装</string>
+    <string name="unit_thousand_person">%s千次安装</string>
+    <string name="unit_ten_thousand_person">%s万次安装</string>
+    <string name="unit_thousand_ten_thousand_person">%s千万次安装</string>
+    <string name="unit_ten_ten_thousand_person">%s亿次安装</string>
+    <string name="unit_thousand_ten_ten_thousand_person">%s千亿次安装</string>
 </resources>

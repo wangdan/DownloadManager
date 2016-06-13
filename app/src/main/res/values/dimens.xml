@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- 主要内容离页面两边间距16dp -->
+    <dimen name="main_two_side_space">16.0dp</dimen>
+    <!--分隔线宽度-->
+    <dimen name="division_right_side_width">1dip</dimen>
+    <!-- 排行文字图标距离左边宽度16dp -->
+    <dimen name="search_ranking_icon_left">16.0dp</dimen>
+    <dimen name="division_left_side_space_org">92dip</dimen>
+    <!--分隔线距离左边宽度(92dip的是代码未改动时的宽度)-->
+    <dimen name="division_left_side_space">84dip</dimen>
+    <!-- 分隔线右端与整个页面间距16dp，左端对齐列表文字 -->
+    <dimen name="division_right_side_space">16.0dp</dimen>
+    <!-- 应用列表高度 -->
+    <dimen name="common_item_height">100dp</dimen>
+    <!-- TabBar和Button字体大小 -->
+    <dimen name="tabbar_button_text_size">14sp</dimen>
+    <!-- 搜索框粗细大小 -->
+    <dimen name="search_stroke_size">1dp</dimen>
+    <!-- actionBar高度 -->
+    <dimen name="actionbar_height">42dp</dimen>
+
+    <!--下载按钮-->
+    <dimen name="download_btn_min_width">80dip</dimen>
+    <dimen name="download_btn_height">30dip</dimen>
+    <dimen name="download_btn_radis">15dip</dimen>
+    <dimen name="download_btn_margin">50dip</dimen>
+
+    <!--弹出框-->
+    <dimen name="custom_dialog_text_size">14sp</dimen>
+    <dimen name="custom_dialog_margin">40dip</dimen>
+
+    <!--权限提示页面-->
+
+    <!--权限提示页面叹号和提示文字的距离-->
+    <dimen name="permission_warning_icon_text_space">4dp</dimen>
+    <!--权限提示文字大小-->
+    <dimen name="permission_warning_text_size">14sp</dimen>
+    <!--权限提示页面提示文字距顶部距离-->
+    <dimen name="permission_warning_margin_top">49dp</dimen>
+    <!--权限提示页面中间图片距提示文字距离-->
+    <dimen name="permission_center_pic_margin_text">40dp</dimen>
+
+    <!--  -->
+    <dimen name="text_font_size_huge">18.0sp</dimen>
+    <dimen name="text_font_size_large">16.0sp</dimen>
+    <dimen name="text_font_size_medium">14.0sp</dimen>
+    <dimen name="text_font_size_small2">13.0sp</dimen>
+    <dimen name="text_font_size_small">12.0sp</dimen>
+    <dimen name="text_font_size_memo">11.0sp</dimen>
+    <dimen name="text_font_size_tiny">10.0sp</dimen>
+    <dimen name="text_font_size_title">20.0sp</dimen>
+    <dimen name="text_font_size_large_medium">15.0sp</dimen>
+
+    <!-- setting -->
+    <dimen name="setting_phone_memory_or_sdcard_title_width">65dip</dimen>
+    <dimen name="setting_phone_memory_or_sdcard_size_width">60dip</dimen>
+    <dimen name="search_popwindow_text_padding">8dip</dimen>
+    <!-- the app list item resource -->
+    <dimen name="app_item_width">327.7dip</dimen>
+    <dimen name="app_item_height">100dip</dimen>
+    <dimen name="app_category_item_width">328dip</dimen>
+    <dimen name="app_category_item_height">72dip</dimen>
+    <dimen name="app_detail_title_height">95dip</dimen>
+    <dimen name="app_detail_icon_width">65dip</dimen>
+    <dimen name="app_icon_width">64dip</dimen>
+    <dimen name="app_icon_height">64dip</dimen>
+    <dimen name="app_action_button_width">62dip</dimen>
+    <dimen name="app_action_button_height">28dip</dimen>
+    <dimen name="app_item_padding">10dip</dimen>
+    <dimen name="app_layout_padding">8dip</dimen>
+    <dimen name="app_info_padding_icon">7dip</dimen>
+    <dimen name="app_action_button_width_four_text">80dip</dimen>
+    <dimen name="app_icon_padding_left">16dip</dimen>
+    <dimen name="appitem_divder_padding_left">83dip</dimen>
+    <dimen name="appitem_ranking_icon_padding_left">14dip</dimen>
+    <dimen name="scene_item_height">23dip</dimen>
+
+    <!-- me -->
+    <dimen name="me_ic_img_width_height">24dip</dimen>
+    <dimen name="me_jump_margin_right">7dip</dimen>
+    <dimen name="me_lyout_picture_margin_left">16dip</dimen>
+    <dimen name="me_lyout_text_margin_left">32dip</dimen>
+    <dimen name="me_lyout_margin_left">16dip</dimen>
+    <dimen name="me_update_num_margin_right">16dip</dimen>
+    <!-- app manager -->
+    <dimen name="app_manager_all_height">48dp</dimen>
+    <dimen name="app_update_all_height">48dp</dimen>
+    <dimen name="app_manager_list_margin_top">2dip</dimen>
+    <!-- the banner params -->
+    <dimen name="banner_width">169dip</dimen>
+    <dimen name="banner_height">67dip</dimen>
+    <!-- the screen shortcut params -->
+    <dimen name="app_screenshoutcut_width">99dip</dimen>
+    <dimen name="app_screenshoutcut_height">166dip</dimen>
+    <dimen name="recommend_title_height">28dip</dimen>
+    <dimen name="list_diveder_height">0.5dip</dimen>
+
+    <dimen name="download_record_not_login_bg_margin_top">82dip</dimen>
+    <dimen name="download_record_not_login_margin_top">54dip</dimen>
+    <dimen name="download_record_login_margin_top">20dip</dimen>
+    <dimen name="download_record_not_login_bg_width">231dip</dimen>
+    <dimen name="download_record_not_login_bg_height">208dip</dimen>
+    <!-- one key report -->
+    <dimen name="one_key_report_width">280dip</dimen>
+    <dimen name="me_lyout_margin_right">18dip</dimen>
+    <dimen name="me_lyout_margin_left_right">10dip</dimen>
+    <!-- drawer animation -->
+    <dimen name="ldrawer_drawableSize">50dp</dimen>
+    <dimen name="ldrawer_barSize">18dp</dimen>
+    <dimen name="ldrawer_topBottomBarArrowSize">11dp</dimen>
+    <dimen name="ldrawer_thickness">2dp</dimen>
+    <dimen name="ldrawer_gapBetweenBars">3dp</dimen>
+    <dimen name="ldrawer_middleBarArrowSize">16dp</dimen>
+    <dimen name="new_btn_stroke_width">1dp</dimen>
+    <dimen name="setting_switch_margin_right">16dip</dimen>
+    <!-- the network error margin top -->
+    <dimen name="network_error_info_margin_top">-30dip</dimen>
+    <dimen name="search_auto_keyword_pop_divider_margin">7dip</dimen>
+    <dimen name="search_auto_keyword_pop_item_height">48dip</dimen>
+    <!-- app common item -->
+    <dimen name="common_item_name_margin_top">17dip</dimen>
+    <dimen name="common_item_version_margin_top">4dip</dimen>
+    <dimen name="common_item_version_margin_right">6dip</dimen>
+    <dimen name="common_item_ratingbar_margin_top">5dip</dimen>
+    <dimen name="ratingbar_min_height">9dip</dimen>
+    <dimen name="ranking_pageindicator_margin">46dip</dimen>
+    <dimen name="common_item_ranking_icon_margin_left">7dip</dimen>
+    <dimen name="common_item_ranking_icon_margin_right">7dip</dimen>
+    <dimen name="common_item_action_button_layout_padding">1dip</dimen>
+    <dimen name="common_adapter_item_action_layout_padding">9dip</dimen>
+    <dimen name="app_detail_description_text_size">14px</dimen>
+    <dimen name="vm_subject_item_image_height">64dip</dimen>
+    <dimen name="common_item_version_text_size">10.0sp</dimen>
+    <dimen name="common_notify_icon_width">22dp</dimen>
+    <dimen name="common_notify_icon_height">22dp</dimen>
+    <dimen name="common_notify_margin">7dp</dimen>
+    <dimen name="search_line_left">70dp</dimen>
+    <!-- the CornerRadius of the iamge -->
+    <dimen name="corner_radius_app_icon">6dp</dimen>
+    <dimen name="corner_radius_banner_icon">2dp</dimen>
+
+    <dimen name="guide_padding_top">48dp</dimen>
+</resources>

@@ -3,16 +3,16 @@ package com.tcl.downloader.utils;
 import android.content.Context;
 import android.util.Log;
 
-public class Logger {
+public class DLogger {
 
-	public final static String TAG = "DownloadManagerLogger";
+	public final static String TAG = "DLogger";
 
 	public static boolean DEBUG = true;
 
 	static Context context;
 
 	public static void setup(Context context) {
-		Logger.context = context;
+		DLogger.context = context;
 	}
 
 	public static void v(Object o) {
@@ -21,7 +21,7 @@ public class Logger {
 
 			Log.v(TAG, log);
 
-			Logger2File.log2File(TAG, log);
+			DLogger2File.log2File(TAG, log);
 		}
 
 	}
@@ -32,7 +32,7 @@ public class Logger {
 
 			Log.v(tag, log);
 
-			Logger2File.log2File(tag, log);
+			DLogger2File.log2File(tag, log);
 		}
 	}
 
@@ -42,7 +42,7 @@ public class Logger {
 
 			Log.v(tag, log);
 
-			Logger2File.log2File(tag, log);
+			DLogger2File.log2File(tag, log);
 		}
 	}
 
@@ -52,7 +52,7 @@ public class Logger {
 
 			Log.d(TAG, log);
 
-			Logger2File.log2File(TAG, log);
+			DLogger2File.log2File(TAG, log);
 		}
 	}
 
@@ -62,7 +62,7 @@ public class Logger {
 
 			Log.d(tag, log);
 
-			Logger2File.log2File(tag, log);
+			DLogger2File.log2File(tag, log);
 		}
 	}
 
@@ -72,7 +72,7 @@ public class Logger {
 
 			Log.d(tag, log);
 
-			Logger2File.log2File(tag, log);
+			DLogger2File.log2File(tag, log);
 		}
 	}
 	
@@ -82,7 +82,7 @@ public class Logger {
 
 			Log.i(TAG, log);
 
-			Logger2File.log2File(TAG, log);
+			DLogger2File.log2File(TAG, log);
 		}
 	}
 
@@ -92,7 +92,7 @@ public class Logger {
 
 			Log.i(tag, log);
 
-			Logger2File.log2File(tag, log);
+			DLogger2File.log2File(tag, log);
 		}
 	}
 	
@@ -102,7 +102,7 @@ public class Logger {
 
 			Log.i(tag, log);
 
-			Logger2File.log2File(tag, log);
+			DLogger2File.log2File(tag, log);
 		}
 	}
 
@@ -112,7 +112,7 @@ public class Logger {
 
 			Log.w(TAG, log);
 
-			Logger2File.log2File(TAG, log);
+			DLogger2File.log2File(TAG, log);
 		}
 	}
 
@@ -122,7 +122,7 @@ public class Logger {
 
 			Log.w(tag, log);
 
-			Logger2File.log2File(tag, log);
+			DLogger2File.log2File(tag, log);
 		}
 	}
 
@@ -132,7 +132,7 @@ public class Logger {
 
 			Log.w(tag, log);
 
-			Logger2File.log2File(tag, log);
+			DLogger2File.log2File(tag, log);
 		}
 	}
 
@@ -142,7 +142,7 @@ public class Logger {
 
 			Log.e(TAG, log);
 
-			Logger2File.log2File(TAG, log);
+			DLogger2File.log2File(TAG, log);
 		}
 	}
 
@@ -152,7 +152,7 @@ public class Logger {
 
 			Log.e(tag, log);
 
-			Logger2File.log2File(tag, log);
+			DLogger2File.log2File(tag, log);
 		}
 	}
 	
@@ -162,7 +162,7 @@ public class Logger {
 
 			Log.e(tag, log);
 
-			Logger2File.log2File(tag, log);
+			DLogger2File.log2File(tag, log);
 		}
 	}
 
@@ -171,7 +171,7 @@ public class Logger {
 		try {
 			Log.v(TAG, msg);
 
-			Logger2File.log2File(TAG, msg);
+			DLogger2File.log2File(TAG, msg);
 		} catch (Throwable e) {
 		}
 	}
@@ -181,7 +181,7 @@ public class Logger {
 			if (DEBUG) {
 				e.printStackTrace();
 
-				Logger2File.log2File(TAG, e);
+				DLogger2File.log2File(TAG, e);
 			}
 			else {
 				String clazzName = clazz == null ? "Unknow" : clazz.getSimpleName();

@@ -38,7 +38,7 @@ import com.tcl.downloader.downloads.Downloads;
 import com.tcl.downloader.provider.DownloadInfo.NetworkState;
 import com.tcl.downloader.utils.ConnectivityManagerUtils;
 import com.tcl.downloader.utils.IoUtils;
-import com.tcl.downloader.utils.Logger;
+import com.tcl.downloader.utils.DLogger;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -264,7 +264,7 @@ public class DownloadThread implements Runnable {
             }
 
         } catch (StopRequestException e) {
-            Logger.printExc(DownloadThread.class, e);
+            DLogger.printExc(DownloadThread.class, e);
 
             mInfoDelta.mStatus = e.getFinalStatus();
             mInfoDelta.mErrorMsg = e.getMessage();

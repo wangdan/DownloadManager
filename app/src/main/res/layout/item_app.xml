@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.CardView
+    android:id="@+id/cardView"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_marginBottom="4dip"
+    android:layout_marginLeft="8dip"
+    android:layout_marginRight="8dip"
+    android:layout_marginTop="4dip"
+    android:clickable="true"
+    android:foreground="?attr/selectableItemBackground" app:cardBackgroundColor="#ffffff"
+    app:cardCornerRadius="3dip" app:cardElevation="1.5dip">
+
+    <RelativeLayout
+        android:id="@+id/app_common_layout"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/app_item_height"
+        android:background="?attr/selectableItemBackground"
+        android:descendantFocusability="blocksDescendants">
+
+        <!-- the ranking icon -->
+
+        <TextView
+            android:id="@+id/search_ranking_icon"
+            android:layout_width="20dip"
+            android:layout_height="20dip"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="14dip"
+            android:ellipsize="end"
+            android:gravity="center_horizontal"
+            android:textColor="@color/argb_b2000"
+            android:textSize="@dimen/text_font_size_small"
+            android:textStyle="italic"
+            android:visibility="gone"/>
+
+        <ImageView
+            android:id="@+id/margin_self"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:layout_alignParentTop="true"
+            android:background="@color/common_bg_color"
+            android:visibility="gone"/>
+
+        <ImageView
+            android:id="@+id/divider_self"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/division_right_side_width"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="@dimen/division_left_side_space_org"
+            android:layout_marginRight="@dimen/division_right_side_space"
+            android:layout_toRightOf="@id/search_ranking_icon"
+            android:src="@color/division_color"
+            android:visibility="gone"/>
+
+        <!-- the margin left self -->
+
+        <View
+            android:id="@+id/margin_self_left"
+            android:layout_width="8dip"
+            android:layout_height="match_parent"
+            android:layout_above="@id/divider_self"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@id/margin_self"
+            android:layout_toRightOf="@id/search_ranking_icon"/>
+
+        <!-- the app icon -->
+
+        <RelativeLayout
+            android:id="@+id/icon_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_toRightOf="@id/search_ranking_icon"
+            android:minWidth="85dp"
+            android:paddingLeft="0dp">
+
+            <ImageView
+                android:id="@+id/icon"
+                android:layout_width="@dimen/app_icon_width"
+                android:layout_height="@dimen/app_icon_width"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="@dimen/division_right_side_space"
+                />
+        </RelativeLayout>
+
+        <!-- the app info -->
+
+        <RelativeLayout
+            android:id="@+id/app_info_layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+
+            android:layout_toRightOf="@id/icon_layout">
+
+            <!-- the ranking icon -->
+
+            <TextView
+                android:id="@+id/ranking_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="@dimen/common_item_ranking_icon_margin_left"
+                android:layout_marginRight="@dimen/common_item_ranking_icon_margin_right"
+                android:layout_marginTop="6dip"
+                android:ellipsize="end"
+                android:gravity="center_horizontal"
+                android:singleLine="true"
+                android:text="12"
+                android:textColor="@color/rgb_fff"
+                android:textSize="@dimen/text_font_size_tiny"
+                android:visibility="gone"/>
+
+            <!-- the action button -->
+
+            <FrameLayout
+                android:id="@+id/action_layout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_marginTop="@dimen/common_item_name_margin_top"
+                android:minHeight="@dimen/download_btn_height"
+                android:minWidth="@dimen/download_btn_min_width"
+                android:paddingRight="@dimen/division_right_side_space">
+
+                <com.tcl.downloader.sample.ui.widget.ProgressButton
+                    android:id="@+id/action_download_button"
+                    android:layout_width="@dimen/download_btn_min_width"
+                    android:layout_height="@dimen/download_btn_height"
+                    android:clickable="true"
+                    android:focusable="false" android:gravity="center"
+                    android:text="@string/download_status_no"
+                    android:textColor="@color/comm_gray"
+                    android:textSize="@dimen/text_font_size_medium"/>
+            </FrameLayout>
+
+            <!-- the app name -->
+
+            <TextView
+                android:id="@+id/name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_marginLeft="@dimen/app_info_padding_icon"
+                android:layout_marginRight="@dimen/app_info_padding_icon"
+                android:layout_marginTop="@dimen/common_item_name_margin_top"
+                android:layout_toLeftOf="@id/action_layout"
+                android:layout_toRightOf="@id/ranking_icon"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textColor="@color/argb_de000"
+                android:textSize="@dimen/text_font_size_large_medium"/>
+
+            <!-- the version name -->
+
+            <TextView
+                android:id="@+id/version"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/name"
+                android:layout_marginLeft="@dimen/app_info_padding_icon"
+                android:layout_marginRight="@dimen/common_item_version_margin_right"
+                android:layout_marginTop="@dimen/common_item_version_margin_top"
+                android:ellipsize="end"
+                android:gravity="center_vertical"
+                android:maxWidth="130dip"
+                android:singleLine="true"
+                android:textColor="@color/argb_89000000"
+                android:textSize="@dimen/common_item_version_text_size"
+                android:visibility="gone"/>
+
+            <!-- star -->
+
+            <RatingBar
+                android:id="@+id/star_ratingbar"
+                style="@style/RatingBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/name"
+                android:layout_marginRight="@dimen/app_info_padding_icon"
+                android:layout_marginTop="@dimen/common_item_ratingbar_margin_top"
+                android:layout_toRightOf="@id/version"
+                android:indeterminate="false"
+                android:max="5"
+                android:numStars="5"
+                android:rating="3.5"
+                android:visibility="gone"/>
+
+            <!-- the app introduce -->
+
+            <TextView
+                android:id="@+id/introduce"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_below="@id/version"
+                android:layout_marginLeft="@dimen/app_info_padding_icon"
+                android:layout_marginRight="16dip"
+                android:layout_marginTop="@dimen/common_item_version_margin_top"
+                android:layout_toLeftOf="@id/action_layout"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textColor="@color/argb_8C000"
+                android:textSize="@dimen/text_font_size_small"
+                android:visibility="visible"/>
+        </RelativeLayout>
+
+    </RelativeLayout>
+</android.support.v7.widget.CardView>

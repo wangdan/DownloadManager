@@ -1,4 +1,4 @@
-package com.tcl.downloader.sample;
+package com.tcl.downloader.sample.ui.activity;
 
 import android.app.Activity;
 import android.database.Cursor;
@@ -8,7 +8,9 @@ import android.os.Environment;
 import android.util.Log;
 
 import com.tcl.downloader.DownloadManager;
-import com.tcl.downloader.utils.Logger;
+import com.tcl.downloader.sample.R;
+import com.tcl.downloader.sample.ui.fragment.AppListFragment;
+import com.tcl.downloader.utils.DLogger;
 
 import java.io.File;
 
@@ -22,7 +24,10 @@ public class SampleActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(org.aisen.android.R.layout.comm_ui_fragment_container);
+        getFragmentManager().beginTransaction().add(R.id.fragmentContainer, AppListFragment.newInstance(), "SampleFragment").commit();
 
+        if (true) return;
         new Thread() {
 
             @Override
@@ -30,18 +35,15 @@ public class SampleActivity extends Activity {
                 super.run();
 
                 DownloadManager downloadManager = DownloadManager.getInstance();
-                for (int i = 0; i < 10; i++) {
-
 //                Uri uri = Uri.parse("http://h.hiphotos.baidu.com/baike/c0%3Dbaike116%2C5%2C5%2C116%2C38/sign=282fc9a9cffcc3cea0cdc161f32cbded/e7cd7b899e510fb3601b321cde33c895d1430c3e.jpg");
-                    Uri uri = Uri.parse("https://buckets.apps.tclclouds.com/appstore/apk/com.tencent.reading/com.tencent.reading.apk?random_up=1450840707000&attname=com.tencent.reading_160.apk");
-                    DownloadManager.Request request = new DownloadManager.Request(uri);
-                    request.setVisibleInDownloadsUi(true);// 文件可以被系统的Downloads应用扫描到并管理
-                    request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE);
-                    request.setTitle("anglababy");
-                    request.setDestinationUri(Uri.fromFile(new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES) + "/anglababy.apk")));
-                    final long reference = downloadManager.enqueue(request);
-                    Log.e("Sample", "" + reference);
-                }
+                Uri uri = Uri.parse("https://buckets.apps.tclclouds.com/appstore/apk/com.tencent.reading/com.tencent.reading.apk?random_up=1450840707000&attname=com.tencent.reading_160.apk");
+                DownloadManager.Request request = new DownloadManager.Request(uri);
+                request.setVisibleInDownloadsUi(true);// 文件可以被系统的Downloads应用扫描到并管理
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+                request.setTitle("anglababy");
+                request.setDestinationUri(Uri.fromFile(new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES) + "/anglababy.apk")));
+                final long reference = downloadManager.enqueue(request);
+                Log.e("Sample", "" + reference);
 
                 boolean queryStatus = false;
                 while (queryStatus) {
@@ -58,8 +60,6 @@ public class SampleActivity extends Activity {
                             // 下载状态
                             int status = c.getInt(c.getColumnIndex(android.app.DownloadManager.COLUMN_STATUS));
 
-                            Logger.v(TAG, "status = " + status + ", progress = " + progress + ", total = " + total + ", address = " + localFilename);
-
                             // 暂停了，开始计时，超时就认为下载失败
                             if (status == android.app.DownloadManager.STATUS_PAUSED) {
                                 if (progress > 0 && total > 0) {
@@ -75,6 +75,8 @@ public class SampleActivity extends Activity {
                             else if (status == android.app.DownloadManager.STATUS_SUCCESSFUL) {
 
                                 publishProgress(1l, 1l);
+
+                                DLogger.v(TAG, "status = " + status + ", progress = " + progress + ", total = " + total + ", address = " + localFilename);
 
                                 queryStatus = false;
                                 break;

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/download_btn_radis" />
+            <solid android:color="@color/download_btn_pressed" />
+            <stroke android:width="1dip" android:color="@color/download_btn_border" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/download_btn_radis" />
+            <solid android:color="@color/download_btn_normal" />
+            <stroke android:width="1dip" android:color="@color/download_btn_border" />
+        </shape>
+    </item>
+</selector>

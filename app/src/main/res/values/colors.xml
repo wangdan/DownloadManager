@@ -1,6 +1,215 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+
+    <!-- 页面背景颜色 -->
+    <color name="page_bg_color">#f8f8f8</color>
+    <!-- 页面主色 -->
+    <color name="theme_color">#27b8af</color>
+    <!-- 分隔线颜色 -->
+    <color name="division_color">#e9e9e9</color>
+    <!-- 20%不透明度的黑色 -->
+    <color name="black_20alpha">#19000000</color>
+    <!-- 深字体颜色 -->
+    <color name="text_color_deep">#333333</color>
+    <!-- 浅字体颜色-->
+    <color name="text_color_light">#969696</color>
+    <!--设置页面颜色-->
+    <color name="settings_bg_color">#cccccc</color>
+    <!-- 搜索框颜色 -->
+    <color name="search_stroke_color">#d4d4d4</color>
+
+    <!-- 壁纸分类文字背景70%不透明度 -->
+    <color name="wallpaper_txt_background">#b3a9bcbb</color>
+
+
+
+
+
+    <!--下载按钮-->
+    <color name="download_btn_normal">@color/page_bg_color</color>
+    <color name="download_btn_pressed">@color/black_20alpha</color>
+    <color name="download_btn_border">#d4d4d4</color>
+    <color name="download_btn_progress">#d0ebe9</color>
+    <color name="download_btn_progress_pause">#e4e4e4</color>
+    <color name="download_btn_text">#333333</color>
+    <color name="download_btn_text_theme">@color/theme_color</color>
+
+
+
+    <!--弹出框-->
+    <color name="custom_dialog_text">#333333</color>
+
+    <!--删除按钮颜色-->
+    <color name="delete_btn_color">#c5672e</color>
+
+    <!--换一批按钮文字颜色-->
+    <color name="scene_change">#8A000000</color>
+
+    <!-- bg title base color -->
+    <color name="common_bg_color">#EEEEEE</color>
+    <!-- tab bg -->
+    <color name="tab_bg">#ffffff</color>
+    <!--<color name="text_color_light">#ffffffff</color>-->
+    <color name="text_color_medium_gray">#ff555555</color>
+    <color name="transparent_bg">#00000000</color>
+    <color name="argb_ff1785d7">#1785d7</color>
+    <color name="argb_ff333333">#ff333333</color>
+    <color name="argb_ff666666">#ff666666</color>
+    <color name="argb_ff999999">#ff999999</color>
+    <color name="argb_ff2e9ce5">#ff2e9ce5</color>
+    <color name="argb_ffcccccc">#ffcccccc</color>
+    <color name="argb_ffe5a800">#ffe5a800</color>
+    <color name="argb_ffff9900">#ffff9900</color>
+    <color name="rank_text_white">#ffffff</color>
+    <color name="rank_text_898989">#898989</color>
+    <color name="me_a9a9a9">#A9A9A9</color>
+    <color name="argb_999999">#999999</color>
+    <color name="argb_8C000">#8C000000</color>
+    <color name="argb_b2000">#777777</color>
+    <color name="argb_de000">#444444</color>
+    <color name="rgb_fff">#ffffff</color>
+    <color name="rgb_ffffff">#ffffff</color>
+    <color name="argb_95fff">#95ffffff</color>
+    <color name="rgb_cfbeff">#cfbeff</color>
+    <color name="rgb_b39ded">#b39ded</color>
+    <color name="rgb_eeeeee">#eeeeee</color>
+    <color name="rgb_d8d6d4">#d8d6d4</color>
+    <color name="rgb_ff9a01">#ff9a01</color>
+    <color name="rgb_f85958">#f85958</color>
+    <color name="rgb_01b2ff">#01b2ff</color>
+    <color name="rgb_885ffe">#885ffe</color>
+    <color name="rgb_e6e6e6">#e6e6e6</color>
+    <color name="rgb_efefef">#efefef</color>
+    <color name="rgb_f6f6f6">#f6f6f6</color>
+    <color name="rgb_dbdbdb">#dbdbdb</color>
+    <color name="argb_c5000000">#c5000000</color>
+    <color name="argb_28000000">#28000000</color>
+    <color name="argb_ae000000">#ae000000</color>
+    <color name="argb_a9000000">#a9000000</color>
+    <color name="argb_4300a380">#4300a380</color>
+    <color name="rgb_ff7575">#ff7575</color>
+    <color name="rgb_fe6260">#fe6260</color>
+    <color name="argb_0ebd48">#0ebd48</color>
+    <color name="argb_c50dbd49">#c50dbd49</color>
+    <color name="argb_c0ffffff">#c0ffffff</color>
+    <color name="argb_89ffffff">#89ffffff</color>
+    <color name="rgb_f5f5f5">#f5f5f5</color>
+    <color name="rgb_f8f8f8">#f8f8f8</color>
+    <!-- me -->
+    <color name="argb_89000000">#aaaaaa</color>
+    <color name="argb_dc000000">#dd000000</color>
+    <!-- progress btn -->
+    <color name="rgb_d5e4e0">#d5e4e0</color>
+    <!-- setting -->
+    <color name="argb_b2000000">#b2000000</color>
+    <color name="rgb_fe3434">#fe3434</color>
+    <color name="rgb_ff6060">#ff6060</color>
+    <color name="rgb_ecf0f1">#ecf0f1</color>
+    <color name="rgb_969696">#969696</color>
+    <color name="rgb_d4d4d4">#d4d4d4</color>
+    <color name="rgb_eeeff0">#eeeff0</color>
+    <!-- search -->
+    <!-- baselayout loading -->
+    <color name="rgb_bdbdbd">#bdbdbd</color>
+    <color name="tips_color1">#646464</color>
+    <color name="tips_color2">#a483ca</color>
+    <color name="tips_color3">#1bbc3b</color>
+    <color name="tips_color4">#ffc44e</color>
+    <color name="tips_color5">#ff6060</color>
+    <color name="tips_color6">#ff8952</color>
+    <color name="rgb_bababa">#bababa</color>
+    <!-- permission detail -->
+    <color name="rgb_737373">#737373</color>
+    <color name="rgb_404040">#404040</color>
+    <color name="rgb_9a9a9a">#9a9a9a</color>
+    <!-- remark -->
+    <color name="rgb_dedede">#dedede</color>
+    <color name="rgb_c2c2c2">#c2c2c2</color>
+    <color name="rgb_c5c5c5">#c5c5c5</color>
+    <color name="rgb_3e3e3e">#3e3e3e</color>
+    <color name="rgb_fd8416">#fd8416</color>
+    <color name="rgb_e4e4e4">#e4e4e4</color>
+    <color name="rgb_8f8f8f">#8f8f8f</color>
+    <color name="argb_66000000">#66000000</color>
+    <color name="rgb_b8b8b8">#b8b8b8</color>
+    <!-- scene -->
+    <color name="argb_890ebd48">#890ebd48</color>
+    <color name="rgb_10be45">#10be45</color>
+    <color name="rgb_0ebd48">#0ebd48</color>
+    <color name="rgb_f4f4f4">#f4f4f4</color>
+    <!-- login -->
+    <color name="argb_4c000000">#4c000000</color>
+    <color name="argb_7fffffff">#7fffffff</color>
+    <color name="argb_7f000000">#7f000000</color>
+    <color name="rgb_cccccc">#cccccc</color>
+    <color name="rgb_e9e9e9">#e9e9e9</color>
+    <color name="rgb_78d797">#78d797</color>
+    <color name="rgb_f67d73">#f67d73</color>
+    <color name="rgb_f1f1f1">#f1f1f1</color>
+    <!-- the text click color -->
+    <color name="rgb_0ca13d">#0ca13d</color>
+    <color name="rgb_d2d2d2">#d2d2d2</color>
+    <color name="rgb_78d796">#78d796</color>
+    <color name="ldrawer_color">#FFFFFF</color>
+    <color name="rgb_8e64f4">#8e64f4</color>
+    <color name="rgb_8d65f2">#8d65f2</color>
+    <color name="rgb_754ddc">#754ddc</color>
+    <color name="rgb_6e38f2">#6e38f2</color>
+    <color name="rgb_6e36f4">#6e36f4</color>
+    <color name="rgb_532bb8">#532bb8</color>
+    <color name="rgb_22bd2c">#22bd2c</color>
+    <color name="rgb_c4c4c4">#c4c4c4</color>
+    <color name="rgb_444444">#444444</color>
+    <color name="argb_444444">#c4444444</color>
+    <color name="rgb_bcbcbc">#bcbcbc</color>
+    <color name="rgb_666666">#666666</color>
+    <color name="rgb_777777">#777777</color>
+    <color name="rgb_8e65f2">#8e65f2</color>
+    <color name="rgb_b6aff7">#b6aff7</color>
+    <color name="rgb_ffe8d4">#ffe8d4</color>
+    <color name="rgb_f5d0b1">#f5d0b1</color>
+    <color name="rgb_fed7d5">#fed7d5</color>
+    <color name="rgb_f8b4af">#f8b4af</color>
+    <color name="rgb_ddffd5">#ddffd5</color>
+    <color name="rgb_bcf8b5">#bcf8b5</color>
+    <color name="rgb_ded7ff">#ded7ff</color>
+    <color name="rgb_bdb2f7">#bdb2f7</color>
+    <color name="rgb_d5effe">#d5effe</color>
+    <color name="rgb_b2ddf8">#b2ddf8</color>
+    <color name="rgb_fcddfa">#fcddfa</color>
+    <color name="rgb_fbbaf6">#fbbaf6</color>
+    <color name="rgb_d8d8d8">#d8d8d8</color>
+    <color name="rgb_c8c7c7">#c8c7c7</color>
+    <color name="rgb_fe5821">#fe5821</color>
+    <color name="rgb_542bb8">#542bb8</color>
+    <color name="rgb_cbb8fa">#cbb8fa</color>
+    <color name="rgb_63b048">#63b048</color>
+    <color name="rgb_ec6941">#ec6941</color>
+    <color name="rgb_ff5722">#ff5722</color>
+    <color name="rgb_e5e5e5">#e5e5e5</color>
+    <color name="rgb_333333">#333333</color>
+    <color name="rgb_aaaaaa">#aaaaaa</color>
+    <color name="rgb_ebebeb">#EBEBEB</color>
+    <color name="rgb_fe8953">#fe8953</color>
+    <color name="rgb_27b330">#27b330</color>
+    <color name="rgb_ddcfff">#ddcfff</color>
+    <color name="rgb_9165f8">#9165f8</color>
+    <color name="rgb_7347da">#7347da</color>
+    <color name="rgb_e3652b">#e3652b</color>
+    <color name="rgb_0a9e12">#0a9e12</color>
+    <color name="rgb_bee8e4">#baa8e4</color>
+    <color name="rgb_8e67f6">#8e67f6</color>
+    <color name="rgb_cbcbcb">#cbcbcb</color>
+    <color name="argb_70000000">#70000000</color>
+    <color name="argb_33000000">#33000000</color>
+    <color name="argb_33ffffff">#33ffffff</color>
+    <color name="argb_d8000000">#d8000000</color>
+    <color name="rgb_ededed">#ededed</color>
+    <color name="rgb_d0cdd4">#d0cdd4</color>
+    <color name="rgb_9a4bfc">#9a4bfc</color>
+    <color name="rgb_ebf1ff">#ebf1ff</color>
 </resources>

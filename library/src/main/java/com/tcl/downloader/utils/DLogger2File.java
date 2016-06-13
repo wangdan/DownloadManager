@@ -16,16 +16,16 @@ import java.util.concurrent.TimeUnit;
  *
  * Created by wangdan on 16/4/26.
  */
-public class Logger2File {
+public class DLogger2File {
 
-    public static boolean DEBUG = Logger.DEBUG;
+    public static boolean DEBUG = DLogger.DEBUG;
 
     private static Calendar mCal;
 
     private static LoggerThread mThread;
 
     static void log2File(String tag, String log) {
-        if (!DEBUG || Logger.context == null) {
+        if (!DEBUG || DLogger.context == null) {
             return;
         }
 
@@ -68,7 +68,7 @@ public class Logger2File {
         DateFormat formatter;
 
         public LoggerThread(String fileName) {
-            String filePath = Logger.context.getExternalFilesDir("logs").getAbsolutePath() + File.separator;
+            String filePath = DLogger.context.getExternalFilesDir("downloader_logs").getAbsolutePath() + File.separator;
             this.fileName = fileName;
             File file = new File(filePath);
             if (!file.exists()) {

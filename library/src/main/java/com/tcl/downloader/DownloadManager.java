@@ -32,6 +32,7 @@ import android.text.TextUtils;
 import android.util.Pair;
 
 import com.tcl.downloader.downloads.Downloads;
+import com.tcl.downloader.utils.DLogger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -56,6 +57,8 @@ import java.util.List;
  * permission to use this class.
  */
 public class DownloadManager {
+
+    public static final String TAG = DownloadManager.class.getSimpleName();
 
     /**
      * An identifier for a particular download, unique across the system.  Clients use this ID to
@@ -908,6 +911,7 @@ public class DownloadManager {
     private static DownloadManager downloadManager;
 
     public static DownloadManager setup(ContentResolver resolver, String packageName) {
+        DLogger.v(TAG, "setup downloader");
         if (downloadManager == null) {
             downloadManager = new DownloadManager(resolver, packageName);
         }
@@ -920,10 +924,12 @@ public class DownloadManager {
     }
 
     private DownloadManager() {
-
+        DLogger.v(TAG, "new DownloadManager()");
     }
 
     private DownloadManager(ContentResolver resolver, String packageName) {
+        this();
+
         mResolver = resolver;
         mPackageName = packageName;
     }
