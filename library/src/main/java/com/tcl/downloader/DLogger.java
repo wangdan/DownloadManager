@@ -1,4 +1,4 @@
-package com.tcl.downloader.utils;
+package com.tcl.downloader;
 
 import android.content.Context;
 import android.util.Log;
@@ -7,12 +7,12 @@ public class DLogger {
 
 	public final static String TAG = "DLogger";
 
-	public static boolean DEBUG = true;
+	static boolean DEBUG = false;
 
 	static Context context;
 
-	public static void setup(Context context) {
-		DLogger.context = context;
+	static void setup(Context context) {
+		DLogger.context = context.getApplicationContext();
 	}
 
 	public static void v(Object o) {

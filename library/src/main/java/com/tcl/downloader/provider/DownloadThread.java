@@ -38,7 +38,7 @@ import com.tcl.downloader.downloads.Downloads;
 import com.tcl.downloader.provider.DownloadInfo.NetworkState;
 import com.tcl.downloader.utils.ConnectivityManagerUtils;
 import com.tcl.downloader.utils.IoUtils;
-import com.tcl.downloader.utils.DLogger;
+import com.tcl.downloader.DLogger;
 
 import java.io.File;
 import java.io.FileDescriptor;

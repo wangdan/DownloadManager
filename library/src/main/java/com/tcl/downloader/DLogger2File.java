@@ -1,4 +1,4 @@
-package com.tcl.downloader.utils;
+package com.tcl.downloader;
 
 import java.io.File;
 import java.io.FileWriter;

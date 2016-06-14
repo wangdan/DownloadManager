@@ -10,7 +10,7 @@ import android.util.Log;
 import com.tcl.downloader.DownloadManager;
 import com.tcl.downloader.sample.R;
 import com.tcl.downloader.sample.ui.fragment.AppListFragment;
-import com.tcl.downloader.utils.DLogger;
+import com.tcl.downloader.DLogger;
 
 import java.io.File;
 
