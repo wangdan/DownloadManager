@@ -69,7 +69,7 @@ public class DownloadStorageProvider extends DocumentsProvider {
 
     @Override
     public boolean onCreate() {
-        mDm = DownloadManager.setup(getContext().getContentResolver(), getContext().getPackageName());
+        mDm = new DownloadManager.Builder(getContext()).build();
         mDm.setAccessAllDownloads(true);
         return true;
     }
@@ -130,7 +130,7 @@ public class DownloadStorageProvider extends DocumentsProvider {
                 throw new IllegalStateException("Failed to touch " + file + ": " + e);
             }
 
-            return Long.toString(mDm.addCompletedDownload(
+            return Long.toString(getDownloadManager().addCompletedDownload(
                     file.getName(), file.getName(), true, mimeType, file.getAbsolutePath(), 0L,
                     false, true));
         } finally {
@@ -143,7 +143,7 @@ public class DownloadStorageProvider extends DocumentsProvider {
         // Delegate to real provider
         final long token = Binder.clearCallingIdentity();
         try {
-            if (mDm.remove(Long.parseLong(docId)) != 1) {
+            if (getDownloadManager().remove(Long.parseLong(docId)) != 1) {
                 throw new IllegalStateException("Failed to delete " + docId);
             }
         } finally {
@@ -162,7 +162,7 @@ public class DownloadStorageProvider extends DocumentsProvider {
             final long token = Binder.clearCallingIdentity();
             Cursor cursor = null;
             try {
-                cursor = mDm.query(new Query().setFilterById(Long.parseLong(docId)));
+                cursor = getDownloadManager().query(new Query().setFilterById(Long.parseLong(docId)));
                 copyNotificationUri(result, cursor);
                 if (cursor.moveToFirst()) {
                     includeDownloadFromCursor(result, cursor);
@@ -184,7 +184,7 @@ public class DownloadStorageProvider extends DocumentsProvider {
         final long token = Binder.clearCallingIdentity();
         Cursor cursor = null;
         try {
-            cursor = mDm.query(new Query().setOnlyIncludeVisibleInDownloadsUi(true)
+            cursor = getDownloadManager().query(new Query().setOnlyIncludeVisibleInDownloadsUi(true)
                     .setFilterByStatus(DownloadManager.STATUS_SUCCESSFUL));
             copyNotificationUri(result, cursor);
             while (cursor.moveToNext()) {
@@ -206,7 +206,7 @@ public class DownloadStorageProvider extends DocumentsProvider {
         final long token = Binder.clearCallingIdentity();
         Cursor cursor = null;
         try {
-            cursor = mDm.query(
+            cursor = getDownloadManager().query(
                     new Query().setOnlyIncludeVisibleInDownloadsUi(true));
             copyNotificationUri(result, cursor);
             while (cursor.moveToNext()) {
@@ -228,7 +228,7 @@ public class DownloadStorageProvider extends DocumentsProvider {
         final long token = Binder.clearCallingIdentity();
         Cursor cursor = null;
         try {
-            cursor = mDm.query(new Query().setOnlyIncludeVisibleInDownloadsUi(true)
+            cursor = getDownloadManager().query(new Query().setOnlyIncludeVisibleInDownloadsUi(true)
                     .setFilterByStatus(DownloadManager.STATUS_SUCCESSFUL));
             copyNotificationUri(result, cursor);
             while (cursor.moveToNext() && result.getCount() < 12) {
@@ -261,7 +261,7 @@ public class DownloadStorageProvider extends DocumentsProvider {
         try {
             final long id = Long.parseLong(docId);
             final ContentResolver resolver = getContext().getContentResolver();
-            return resolver.openFileDescriptor(mDm.getDownloadUri(id), mode, signal);
+            return resolver.openFileDescriptor(getDownloadManager().getDownloadUri(id), mode, signal);
         } finally {
             Binder.restoreCallingIdentity(token);
         }
@@ -376,4 +376,13 @@ public class DownloadStorageProvider extends DocumentsProvider {
         }
         return name;
     }
+
+    private DownloadManager getDownloadManager() {
+        if (DownloadManager.getInstance() != null && mDm != DownloadManager.getInstance()) {
+            mDm = DownloadManager.getInstance();
+        }
+
+        return mDm;
+    }
+
 }

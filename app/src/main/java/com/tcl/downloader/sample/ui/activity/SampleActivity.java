@@ -45,34 +45,34 @@ public class SampleActivity extends Activity {
                 final long reference = downloadManager.enqueue(request);
                 Log.e("Sample", "" + reference);
 
-                boolean queryStatus = false;
+                boolean queryStatus = true;
                 while (queryStatus) {
                     DownloadManager.Query query = new DownloadManager.Query();
                     Cursor c = downloadManager.query(query);
                     try {
                         if (c.moveToFirst()) {
                             // 下载进度
-                            long progress = c.getLong(c.getColumnIndexOrThrow(android.app.DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                            long progress = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
                             // 总共大小
-                            long total = c.getLong(c.getColumnIndexOrThrow(android.app.DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+                            long total = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
                             // 下载的实际文件地址
-                            String localFilename = c.getString(c.getColumnIndexOrThrow(android.app.DownloadManager.COLUMN_LOCAL_FILENAME));
+                            String localFilename = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_FILENAME));
                             // 下载状态
-                            int status = c.getInt(c.getColumnIndex(android.app.DownloadManager.COLUMN_STATUS));
+                            int status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
 
                             // 暂停了，开始计时，超时就认为下载失败
-                            if (status == android.app.DownloadManager.STATUS_PAUSED) {
+                            if (status == DownloadManager.STATUS_PAUSED) {
                                 if (progress > 0 && total > 0) {
                                     publishProgress(progress, total);
                                 }
                             }
                             //正在下载，不做任何事情
-                            else if (status == android.app.DownloadManager.STATUS_PENDING ||
-                                    status == android.app.DownloadManager.STATUS_RUNNING) {
+                            else if (status == DownloadManager.STATUS_PENDING ||
+                                    status == DownloadManager.STATUS_RUNNING) {
                                 publishProgress(progress, total);
                             }
                             // 下载完成
-                            else if (status == android.app.DownloadManager.STATUS_SUCCESSFUL) {
+                            else if (status == DownloadManager.STATUS_SUCCESSFUL) {
 
                                 publishProgress(1l, 1l);
 
@@ -82,7 +82,7 @@ public class SampleActivity extends Activity {
                                 break;
                             }
                             // 下载失败
-                            else if (status == android.app.DownloadManager.STATUS_FAILED) {
+                            else if (status == DownloadManager.STATUS_FAILED) {
                                 Log.e(TAG, "Download Failed");
                             }
                         }

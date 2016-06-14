@@ -1,9 +1,9 @@
 package com.tcl.downloader.sample.base;
 
 import com.tcl.downloader.DownloadManager;
-import com.tcl.downloader.sample.BuildConfig;
 
 import org.aisen.android.common.context.GlobalContext;
+import org.aisen.android.common.utils.Logger;
 import org.aisen.android.component.bitmaploader.BitmapLoader;
 
 /**
@@ -15,8 +15,11 @@ public class SampleApplication extends GlobalContext {
     public void onCreate() {
         super.onCreate();
 
+        Logger.DEBUG = true;
+
         BitmapLoader.newInstance(this, String.valueOf(getExternalFilesDir("images")));
 
-        new DownloadManager.Builder(this).setDebug(BuildConfig.DEBUG).build();
+        new DownloadManager.Builder(this).setDebug(true).build();
     }
+
 }
