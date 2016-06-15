@@ -45,10 +45,6 @@ public final class DownloadController {
 
     };
 
-    static {
-//        mDownloadStatusThread.start();
-    }
-
     private DownloadController() {
 
     }

@@ -38,6 +38,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.tcl.downloader.DLogger;
 import com.tcl.downloader.DownloadController;
 import com.tcl.downloader.R;
 import com.tcl.downloader.downloads.Downloads;
@@ -97,6 +98,7 @@ public class DownloadService extends Service {
      */
     @GuardedBy("mDownloads")
     private final Map<Long, DownloadInfo> mDownloads = Maps.newHashMap();
+    private final Map<Long, Boolean> mDownloadCompleted = Maps.newHashMap();
 
     private ExecutorService mExecutor;
 
@@ -380,11 +382,19 @@ public class DownloadService extends Service {
         }
 
         // Update notifications visible to user
-        mNotifier.updateWith(mDownloads.values());
-        // 更新状态给UI
         Collection<DownloadInfo> downloadInfos = mDownloads.values();
+        mNotifier.updateWith(downloadInfos);
+        // 更新状态给UI
         for (DownloadInfo downloadInfo : downloadInfos) {
-            DownloadController.refreshDownloadInfo(downloadInfo);
+            if (isNotifyStatus(downloadInfo.mId, downloadInfo.mStatus)) {
+                DLogger.v(TAG, "title[%s], progress[%s], total[%s], per[%s], uri[%s]",
+                        downloadInfo.mTitle,
+                        downloadInfo.mCurrentBytes + "",
+                        downloadInfo.mTotalBytes + "",
+                        String.valueOf(downloadInfo.mCurrentBytes * 100 / downloadInfo.mTotalBytes) + "%",
+                        downloadInfo.mUri);
+                DownloadController.refreshDownloadInfo(downloadInfo);
+            }
         }
 
         // Set alarm when next action is in future. It's okay if the service
@@ -401,6 +411,20 @@ public class DownloadService extends Service {
         }
 
         return isActive;
+    }
+
+    private boolean isNotifyStatus(long id, int status) {
+        if (status == Downloads.Impl.STATUS_QUEUED_FOR_WIFI ||
+                status == Downloads.Impl.STATUS_RUNNING) {
+            mDownloadCompleted.put(id, false);
+            return true;
+        }
+        else if (Downloads.Impl.isStatusCompleted(status) && (mDownloadCompleted.get(id) == null || !mDownloadCompleted.get(id))) {
+            mDownloadCompleted.put(id, true);
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -444,6 +468,7 @@ public class DownloadService extends Service {
             deleteFileIfExists(info.mFileName);
         }
         mDownloads.remove(info.mId);
+        mDownloadCompleted.remove(info.mId);
     }
 
     private void deleteFileIfExists(String path) {

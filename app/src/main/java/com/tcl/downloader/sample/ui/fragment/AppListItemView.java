@@ -182,6 +182,7 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
         // 成功
         else if (status.status == DownloadManager.STATUS_SUCCESSFUL) {
             mActionButton.setText("已下载");
+            mActionButton.setProgress(100);
         }
         // 暂停
         else if (status.status == DownloadManager.STATUS_PAUSED) {
