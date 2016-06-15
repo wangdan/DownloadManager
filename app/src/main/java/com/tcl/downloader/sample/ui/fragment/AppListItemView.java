@@ -11,11 +11,13 @@ import android.widget.TextView;
 
 import com.tcl.downloader.DownloadController;
 import com.tcl.downloader.DownloadManager;
+import com.tcl.downloader.IDownloadObserver;
+import com.tcl.downloader.IDownloadSubject;
 import com.tcl.downloader.sample.R;
 import com.tcl.downloader.sample.support.sdk.bean.AppBean;
 import com.tcl.downloader.sample.ui.widget.ProgressButton;
 
-import org.aisen.android.common.utils.KeyGenerator;
+import org.aisen.android.common.utils.Logger;
 import org.aisen.android.component.bitmaploader.BitmapLoader;
 import org.aisen.android.component.bitmaploader.core.ImageConfig;
 import org.aisen.android.support.inject.ViewInject;
@@ -27,7 +29,9 @@ import java.text.DecimalFormat;
 /**
  * Created by wangdan on 16/5/13.
  */
-public class AppListItemView extends ARecycleViewItemView<AppBean> implements DownloadController.DownloadProxy, View.OnClickListener {
+public class AppListItemView extends ARecycleViewItemView<AppBean> implements View.OnClickListener, IDownloadObserver {
+
+    static final String TAG = "AppItemView";
 
     @ViewInject(id = R.id.icon)
     ImageView mIcon;
@@ -56,13 +60,19 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Do
     @ViewInject(id = R.id.icon_layout)
     View mIconView;
 
-    public AppListItemView(Context context, View itemView) {
+    private IDownloadSubject mProxy;
+    private AppBean mApp;
+
+    public AppListItemView(Context context, View itemView, IDownloadSubject proxy) {
         super(context, itemView);
+
+        this.mProxy = proxy;
     }
 
     @Override
     public void onBindData(View view, AppBean app, int i) {
-        DownloadController.register(app.getApk_url(), this);
+        mApp = app;
+        mProxy.attach(this);
 
         mTitle.setText(app.getName());
         mVersion.setVisibility(View.VISIBLE);
@@ -138,49 +148,62 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Do
     }
 
     @Override
-    public void onNewStatus(DownloadController.DownloadStatus status) {
+    public String downloadURI() {
+        if (mApp != null) {
+            return mApp.getApk_url();
+        }
 
+        return null;
     }
 
     @Override
-    public void onInit() {
+    public void onDownloadPrepare() {
         mActionButton.setText("下载");
     }
 
     @Override
-    public void onProgress(long progress, long total) {
-        mActionButton.setNormalColor(getContext().getResources().getColor(
-                R.color.download_btn_progress));
-        mActionButton.setPressColor(getContext().getResources().getColor(
-                R.color.download_btn_progress));
-        mActionButton.setText(Math.round(progress * 100.0f / total) + "%");
-        mActionButton.setProgress(Math.round(progress * 100.0f / total));
-        mActionButton.setProgressState(true);
-    }
+    public void onDownloadChanged(DownloadController.DownloadStatus status) {
+        if (mApp != null) {
+            if (status.progress > 0 && status.total > 0) {
+                long progress = status.progress;
+                long total = status.total;
 
-    @Override
-    public void onPaused() {
-        mActionButton.setText("暂停");
-    }
+                Logger.w(TAG, "app[%s], status[%d], progress[%s]", mApp.getName(), status.status, Math.round(progress * 100.0f / total) + "%");
+            }
+            else {
+                Logger.w(TAG, "app[%s], status[%d], error[%d]", mApp.getName(), status.status, status.error);
+            }
+        }
 
-    @Override
-    public void onPending() {
-        mActionButton.setText("等待");
-    }
+        // 失败
+        if (status.status == DownloadManager.STATUS_FAILED) {
+            mActionButton.setText("失败");
+        }
+        // 成功
+        else if (status.status == DownloadManager.STATUS_SUCCESSFUL) {
+            mActionButton.setText("已下载");
+        }
+        // 暂停
+        else if (status.status == DownloadManager.STATUS_PAUSED) {
+            mActionButton.setText("暂停");
+        }
+        // 等待
+        else if (status.status == DownloadManager.STATUS_PENDING) {
+            mActionButton.setText("等待");
+        }
+        // 下载中
+        else if (status.status == DownloadManager.STATUS_RUNNING) {
+            long progress = status.progress;
+            long total = status.total;
 
-    @Override
-    public void onSuccessful() {
-        mActionButton.setText("已下载");
-    }
-
-    @Override
-    public void onFailed(int error) {
-        mActionButton.setText("失败");
-    }
-
-    @Override
-    public String generateKey(String uri) {
-        return KeyGenerator.generateMD5(uri);
+            mActionButton.setNormalColor(getContext().getResources().getColor(
+                    R.color.download_btn_progress));
+            mActionButton.setPressColor(getContext().getResources().getColor(
+                    R.color.download_btn_progress));
+            mActionButton.setText(Math.round(progress * 100.0f / total) + "%");
+            mActionButton.setProgress(Math.round(progress * 100.0f / total));
+            mActionButton.setProgressState(true);
+        }
     }
 
 }

@@ -1,11 +1,14 @@
 package com.tcl.downloader.sample.ui.fragment;
 
+import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.alibaba.fastjson.JSON;
+import com.tcl.downloader.DownloadController;
+import com.tcl.downloader.DownloadProxy;
 import com.tcl.downloader.sample.R;
 import com.tcl.downloader.sample.support.sdk.SDK;
 import com.tcl.downloader.sample.support.sdk.bean.AppBean;
@@ -29,6 +32,15 @@ public class AppListFragment extends ARecycleViewFragment<AppBean, AppBeans> {
         return new AppListFragment();
     }
 
+    private DownloadProxy mDownloadProxy;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        mDownloadProxy = new DownloadProxy();
+    }
+
     @Override
     public IItemViewCreator<AppBean> configItemViewCreator() {
         return new IItemViewCreator<AppBean>() {
@@ -40,7 +52,7 @@ public class AppListFragment extends ARecycleViewFragment<AppBean, AppBeans> {
 
             @Override
             public IITemView<AppBean> newItemView(View view, int i) {
-                return new AppListItemView(getActivity(), view);
+                return new AppListItemView(getActivity(), view, mDownloadProxy);
             }
 
         };
@@ -80,6 +92,20 @@ public class AppListFragment extends ARecycleViewFragment<AppBean, AppBeans> {
             return beans;
         }
 
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        DownloadController.register(mDownloadProxy);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        DownloadController.unregister(mDownloadProxy);
     }
 
 }

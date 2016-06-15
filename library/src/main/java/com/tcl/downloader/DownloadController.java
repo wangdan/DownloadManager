@@ -6,9 +6,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.text.TextUtils;
+import android.util.LruCache;
 
 import java.io.Serializable;
-import java.util.Hashtable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,13 +24,12 @@ public final class DownloadController {
 
     static final String TAG = "DownloadController";
 
-    private final static Hashtable<String, Vector<DownloadProxy>> mDownloadProxy = new Hashtable<>();
-
-    private final static Hashtable<String, DownloadStatus> mDownloadStatus = new Hashtable<>();
-
+    // 所有注册的Proxy
+    private final static Vector<IDownloadSubject> mDownloadProxy = new Vector<>();
+    // 下载状态缓存，最多缓存50个
+    private final static LruCache<String, DownloadStatus> mStatusCache = new LruCache<>(50);
+    // 死循环查询下载状态的线程
     private final static DownloadStatusThread mDownloadStatusThread = new DownloadStatusThread();
-
-    private final static Hashtable<String, String> uriKeyMap = new Hashtable<>();
 
     static {
         mDownloadStatusThread.start();
@@ -38,100 +39,57 @@ public final class DownloadController {
 
     }
 
-    public synchronized static void register(String url, DownloadProxy callback) {
-        if (TextUtils.isEmpty(url) || callback == null) {
+    public synchronized static void register(IDownloadSubject callback) {
+        if (callback == null) {
             return;
         }
 
-        String key = callback.generateKey(url);
-        uriKeyMap.put(url, key);
-        if (TextUtils.isEmpty(key)) {
+        if (!mDownloadProxy.contains(callback)) {
+            mDownloadProxy.add(callback);
+
+            DLogger.v(TAG, "register proxy[%s]", callback.toString());
+        }
+    }
+
+    public synchronized static void unregister(DownloadProxy callback) {
+        if (callback == null) {
             return;
         }
 
-        Vector<DownloadProxy> downloadProxyVector = mDownloadProxy.get(key);
-        if (downloadProxyVector == null) {
-            downloadProxyVector = new Vector<>();
-            mDownloadProxy.put(key, downloadProxyVector);
-
-            DLogger.v(TAG, "new proxyVector[%s]", downloadProxyVector.toString());
+        boolean removed = mDownloadProxy.remove(callback);
+        if (removed) {
+            DLogger.v(TAG, "unregister proxy[%s]", callback.toString());
         }
+    }
 
-        if (!downloadProxyVector.contains(callback)) {
-            downloadProxyVector.add(callback);
-
-            DLogger.v(TAG, "vector[%s] add proxy[%s]", downloadProxyVector.toString(), callback.toString());
-        }
-
-        DownloadStatus downloadStatus = mDownloadStatus.get(key);
+    // 查询一次Status状态
+    static DownloadStatus queryStatus(String uri) {
+        DownloadStatus downloadStatus = mStatusCache.get(generateMD5(uri));
         if (downloadStatus != null) {
-            refreshDownloasStatus(key, downloadStatus);
+            refreshDownloasStatus(uri, downloadStatus);
         }
         else {
-            new QueryStatusTask(key, url).executeOnExecutor(mQueryStatusTaskPool);
+            new QueryStatusTask(uri).start();
+        }
+
+        return downloadStatus;
+    }
+
+    synchronized static void addStatus(String uri, DownloadStatus status) {
+        String key = generateMD5(uri);
+        if (mStatusCache.get(key) == null) {
+            mStatusCache.put(generateMD5(uri), status);
+
+            DLogger.v(TAG, "new status[%s]", status.toString());
+        }
+        else if (mStatusCache.get(key) != status) {
+            mStatusCache.get(key).copy(status);
         }
     }
 
-    public synchronized static void unregister(String url, DownloadProxy callback) {
-        if (TextUtils.isEmpty(url) || callback == null) {
-            return;
-        }
-
-        String key = callback.generateKey(url);
-        if (TextUtils.isEmpty(key)) {
-            return;
-        }
-
-        Vector<DownloadProxy> downloadProxyVector = mDownloadProxy.get(key);
-        if (downloadProxyVector != null) {
-            if (downloadProxyVector.contains(callback)) {
-                mDownloadProxy.remove(callback);
-            }
-            if (downloadProxyVector.size() == 0) {
-                mDownloadProxy.remove(downloadProxyVector);
-
-                mDownloadStatus.remove(key);
-
-                uriKeyMap.remove(url);
-            }
-        }
-    }
-
-    private static void refreshDownloasStatus(String key, DownloadStatus status) {
-
-        Vector<DownloadProxy> downloadProxyVector = mDownloadProxy.get(key);
-        if (downloadProxyVector != null && downloadProxyVector.size() > 0) {
-            for (DownloadProxy proxy : downloadProxyVector) {
-                DLogger.v(TAG, "proxy[%s], status = %s, progress = %s, total = %s", proxy, status.status + "", status.progress + "", status.total + "");
-
-                // 更新状态
-                proxy.onNewStatus(status);
-
-                // 失败
-                if (status.status == DownloadManager.STATUS_FAILED) {
-                    proxy.onFailed(status.error);
-                }
-                // 成功
-                else if (status.status == DownloadManager.STATUS_SUCCESSFUL) {
-                    proxy.onSuccessful();
-                }
-                // 暂停
-                else if (status.status == DownloadManager.STATUS_PAUSED) {
-                    proxy.onPaused();
-                }
-                // 等待
-                else if (status.status == DownloadManager.STATUS_PENDING) {
-                    proxy.onPending();
-                }
-                // 下载中
-                else if (status.status == DownloadManager.STATUS_RUNNING) {
-                    proxy.onProgress(status.progress, status.total);
-                }
-                // 初始化
-                else if (status.status == DownloadStatus.STATUS_INIT) {
-                    proxy.onInit();
-                }
-            }
+    private static void refreshDownloasStatus(String uri, DownloadStatus status) {
+        for (IDownloadSubject proxy : mDownloadProxy) {
+            proxy.notifyDownload(uri, status);
         }
     }
 
@@ -142,34 +100,28 @@ public final class DownloadController {
     static final ExecutorService mQueryStatusTaskPool = Executors.newSingleThreadExecutor();
     static class QueryStatusTask extends AsyncTask<Void, Void, DownloadStatus> {
 
-        String url;
-        String key;
+        String uri;
 
-        QueryStatusTask(String key, String url) {
-            this.key = key;
-            this.url = url;
+        QueryStatusTask(String uri) {
+            this.uri = uri;
         }
 
         @Override
         protected DownloadStatus doInBackground(Void... params) {
-            DownloadStatus downloadStatus = mDownloadStatus.get(key);
+            DownloadStatus downloadStatus = mStatusCache.get(generateMD5(uri));
 
             if (downloadStatus == null) {
                 DownloadManager.Query query = new DownloadManager.Query();
+                query.setFilterByURI(uri);
                 DownloadManager downloadManager = DownloadManager.getInstance();
                 if (downloadManager != null) {
                     Cursor c = downloadManager.query(query);
                     if (c != null) {
                         try {
                             if (c.moveToFirst()) {
-                                do {
-                                    String uri = c.getString(c.getColumnIndex(DownloadManager.COLUMN_URI));
-                                    if (!TextUtils.isEmpty(uri) && uri.equals(url)) {
-                                        downloadStatus = DownloadStatusThread.getStatus(c);
+                                downloadStatus = DownloadStatusThread.getStatus(uri, c);
 
-                                        break;
-                                    }
-                                } while (c.moveToNext());
+                                addStatus(uri, downloadStatus);
                             }
                         } catch (Throwable e) {
                             DLogger.printExc(DownloadController.class, e);
@@ -184,10 +136,6 @@ public final class DownloadController {
                 }
             }
 
-            if (downloadStatus == null) {
-                downloadStatus = new DownloadStatus();
-            }
-
             return downloadStatus;
         }
 
@@ -195,7 +143,11 @@ public final class DownloadController {
         protected void onPostExecute(DownloadStatus downloadStatus) {
             super.onPostExecute(downloadStatus);
 
-            refreshDownloasStatus(key, downloadStatus);
+            refreshDownloasStatus(uri, downloadStatus);
+        }
+
+        void start() {
+            executeOnExecutor(mQueryStatusTaskPool);
         }
 
     }
@@ -210,16 +162,19 @@ public final class DownloadController {
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
 
-                String key = msg.getData().getString("key");
+                String uri = msg.getData().getString("uri");
                 DownloadStatus status = (DownloadStatus) msg.getData().getSerializable("status");
 
-                refreshDownloasStatus(key, status);
+                refreshDownloasStatus(uri, status);
             }
 
         };
 
-        static DownloadStatus getStatus(Cursor c) {
-            DownloadStatus downloadStatus = new DownloadStatus();
+        static DownloadStatus getStatus(String uri, Cursor c) {
+            DownloadStatus downloadStatus = mStatusCache.get(generateMD5(uri));
+            if (downloadStatus == null) {
+                downloadStatus = new DownloadStatus();
+            }
 
             downloadStatus.status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
             downloadStatus.progress = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
@@ -242,25 +197,23 @@ public final class DownloadController {
                         try {
                             if (c.moveToFirst()) {
                                 do {
-                                    // 获取最新的状态
-                                    DownloadStatus downloadStatus = getStatus(c);
-
                                     String uri = c.getString(c.getColumnIndex(DownloadManager.COLUMN_URI));
-                                    String key = uriKeyMap.get(uri);
 
-                                    if (TextUtils.isEmpty(key) || TextUtils.isEmpty(uri)) {
+                                    if (TextUtils.isEmpty(uri)) {
                                         continue;
                                     }
 
+                                    // 获取最新的状态
+                                    DownloadStatus downloadStatus = getStatus(uri, c);
+                                    addStatus(uri, downloadStatus);
+
+                                    DLogger.v(TAG, "status[%d], progress[%s], total[%s], uri[%s]", downloadStatus.status, downloadStatus.progress + "", downloadStatus.total + "", uri);
+
                                     // 刷新UI
                                     Message message = mHandler.obtainMessage();
-                                    message.getData().putString("key", key);
+                                    message.getData().putString("uri", uri);
                                     message.getData().putSerializable("status", downloadStatus);
                                     message.sendToTarget();
-
-                                    if (!mDownloadStatus.containsKey(key)) {
-                                        mDownloadStatus.put(key, downloadStatus);
-                                    }
                                 } while (c.moveToNext());
                             }
                         } catch (Throwable e) {
@@ -293,9 +246,7 @@ public final class DownloadController {
 
         private static final long serialVersionUID = 6348384894928694134L;
 
-        public static final int STATUS_INIT = 1 << 5;
-
-        public int status = STATUS_INIT;
+        public int status = -1;
 
         public int error = -1;
 
@@ -303,26 +254,60 @@ public final class DownloadController {
 
         public long progress = -1;
 
+        @Override
+        public String toString() {
+            return String.format("status[%d], error[%d], total[%s], progress[%s]", status, error, total + "", progress + "");
+        }
+
+        void copy(DownloadStatus newStatus) {
+            status = newStatus.status;
+            error = newStatus.error;
+            total = newStatus.total;
+            progress = newStatus.progress;
+        }
+
     }
 
-    public interface DownloadProxy {
+//    public interface DownloadProxy {
+//
+//        void onNewStatus(DownloadStatus status);
 
-        void onNewStatus(DownloadStatus status);
+//        void onInit();
+//
+//        void onProgress(long progress, long total);
+//
+//        void onPaused();
+//
+//        void onPending();
+//
+//        void onSuccessful();
+//
+//        void onFailed(int error);
+//
+//        String generateKey(String uri);
 
-        void onInit();
+//    }
 
-        void onProgress(long progress, long total);
+    static String generateMD5(String key) {
+        try {
+            MessageDigest e = MessageDigest.getInstance("MD5");
+            e.update(key.getBytes());
+            byte[] bytes = e.digest();
+            StringBuilder sb = new StringBuilder();
 
-        void onPaused();
+            for(int i = 0; i < bytes.length; ++i) {
+                String hex = Integer.toHexString(255 & bytes[i]);
+                if(hex.length() == 1) {
+                    sb.append('0');
+                }
 
-        void onPending();
+                sb.append(hex);
+            }
 
-        void onSuccessful();
-
-        void onFailed(int error);
-
-        String generateKey(String uri);
-
+            return sb.toString();
+        } catch (NoSuchAlgorithmException var6) {
+            return String.valueOf(key.hashCode());
+        }
     }
 
 }

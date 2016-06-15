@@ -7,10 +7,10 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 
+import com.tcl.downloader.DLogger;
 import com.tcl.downloader.DownloadManager;
 import com.tcl.downloader.sample.R;
 import com.tcl.downloader.sample.ui.fragment.AppListFragment;
-import com.tcl.downloader.DLogger;
 
 import java.io.File;
 
@@ -36,7 +36,8 @@ public class SampleActivity extends Activity {
 
                 DownloadManager downloadManager = DownloadManager.getInstance();
 //                Uri uri = Uri.parse("http://h.hiphotos.baidu.com/baike/c0%3Dbaike116%2C5%2C5%2C116%2C38/sign=282fc9a9cffcc3cea0cdc161f32cbded/e7cd7b899e510fb3601b321cde33c895d1430c3e.jpg");
-                Uri uri = Uri.parse("https://buckets.apps.tclclouds.com/appstore/apk/com.tencent.reading/com.tencent.reading.apk?random_up=1450840707000&attname=com.tencent.reading_160.apk");
+                String url = "https://buckets.apps.tclclouds.com/appstore/apk/com.tencent.reading/com.tencent.reading.apk?random_up=1450840707000&attname=com.tencent.reading_160.apk";
+                Uri uri = Uri.parse(url);
                 DownloadManager.Request request = new DownloadManager.Request(uri);
                 request.setVisibleInDownloadsUi(true);// 文件可以被系统的Downloads应用扫描到并管理
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
@@ -48,9 +49,13 @@ public class SampleActivity extends Activity {
                 boolean queryStatus = true;
                 while (queryStatus) {
                     DownloadManager.Query query = new DownloadManager.Query();
+                    query.setFilterByURI(url);
+                    query.setFilterById(reference);
                     Cursor c = downloadManager.query(query);
                     try {
                         if (c.moveToFirst()) {
+                            // 下载链接
+                            url = c.getString(c.getColumnIndex(DownloadManager.COLUMN_URI));
                             // 下载进度
                             long progress = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
                             // 总共大小
@@ -59,6 +64,8 @@ public class SampleActivity extends Activity {
                             String localFilename = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_FILENAME));
                             // 下载状态
                             int status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
+
+                            DLogger.v(TAG, "status = " + status + ", progress = " + progress + ", total = " + total + ", address = " + localFilename + " ,url = " + url);
 
                             // 暂停了，开始计时，超时就认为下载失败
                             if (status == DownloadManager.STATUS_PAUSED) {
@@ -76,7 +83,7 @@ public class SampleActivity extends Activity {
 
                                 publishProgress(1l, 1l);
 
-                                DLogger.v(TAG, "status = " + status + ", progress = " + progress + ", total = " + total + ", address = " + localFilename);
+                                DLogger.v(TAG, "status = " + status + ", progress = " + progress + ", total = " + total + ", address = " + localFilename + " ,url = " + url);
 
                                 queryStatus = false;
                                 break;
