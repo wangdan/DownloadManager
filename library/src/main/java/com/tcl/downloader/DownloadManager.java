@@ -769,6 +769,7 @@ public class DownloadManager {
         public static final int ORDER_DESCENDING = 2;
 
         private long[] mIds = null;
+        private String[] mURIS = null;
         private Integer mStatusFlags = null;
         private String mOrderByColumn = Downloads.Impl.COLUMN_LAST_MODIFICATION;
         private int mOrderDirection = ORDER_DESCENDING;
@@ -780,6 +781,11 @@ public class DownloadManager {
          */
         public Query setFilterById(long... ids) {
             mIds = ids;
+            return this;
+        }
+
+        public Query setFilterByURI(String... uris) {
+            mURIS = uris;
             return this;
         }
 
@@ -839,12 +845,18 @@ public class DownloadManager {
          */
         Cursor runQuery(ContentResolver resolver, String[] projection, Uri baseUri) {
             Uri uri = baseUri;
-            List<String> selectionParts = new ArrayList<String>();
-            String[] selectionArgs = null;
 
-            if (mIds != null) {
-                selectionParts.add(getWhereClauseForIds(mIds));
-                selectionArgs = getWhereArgsForIds(mIds);
+            List<String> selectionParts = new ArrayList<>();
+            List<String[]> selectionArgList = new ArrayList<>();
+
+            if (mIds != null && mIds.length > 0) {
+                selectionParts.add(getWhereClauseForIds(mIds));;
+                selectionArgList.add(getWhereArgsForIds(mIds));;
+            }
+
+            if (mURIS != null && mURIS.length > 0) {
+                selectionParts.add(getWhereClauseForURIs(mURIS));
+                selectionArgList.add(getWhereArgsForURIs(mURIS));
             }
 
             if (mStatusFlags != null) {
@@ -881,6 +893,21 @@ public class DownloadManager {
             String selection = joinStrings(" AND ", selectionParts);
             String orderDirection = (mOrderDirection == ORDER_ASCENDING ? "ASC" : "DESC");
             String orderBy = mOrderByColumn + " " + orderDirection;
+
+            String[] selectionArgs = null;
+            List<String> tempList = new ArrayList<>();
+            for (String[] strArr : selectionArgList) {
+                for (String str : strArr) {
+                    tempList.add(str);
+                }
+            }
+            if (tempList.size() > 0) {
+                selectionArgs = new String[tempList.size()];
+
+                for (int i = 0; i < tempList.size(); i++) {
+                    selectionArgs[i] = tempList.get(i);
+                }
+            }
 
             return resolver.query(uri, projection, selection, selectionArgs, orderBy);
         }
@@ -1260,6 +1287,20 @@ public class DownloadManager {
         return whereClause.toString();
     }
 
+    static String getWhereClauseForURIs(String[] uris) {
+        StringBuilder whereClause = new StringBuilder();
+        whereClause.append("(");
+        for (int i = 0; i < uris.length; i++) {
+            if (i > 0) {
+                whereClause.append("OR ");
+            }
+            whereClause.append(Downloads.Impl.COLUMN_URI);
+            whereClause.append(" = ? ");
+        }
+        whereClause.append(")");
+        return whereClause.toString();
+    }
+
     /**
      * Get the selection args for a clause returned by {@link #getWhereClauseForIds(long[])}.
      */
@@ -1267,6 +1308,14 @@ public class DownloadManager {
         String[] whereArgs = new String[ids.length];
         for (int i = 0; i < ids.length; i++) {
             whereArgs[i] = Long.toString(ids[i]);
+        }
+        return whereArgs;
+    }
+
+    static String[] getWhereArgsForURIs(String[] uri) {
+        String[] whereArgs = new String[uri.length];
+        for (int i = 0; i < uri.length; i++) {
+            whereArgs[i] = "" + uri[i] + "";
         }
         return whereArgs;
     }
@@ -1413,6 +1462,10 @@ public class DownloadManager {
                     return STATUS_FAILED;
             }
         }
+    }
+
+    public ContentResolver getResolver() {
+        return mResolver;
     }
 
     public static class Builder {
