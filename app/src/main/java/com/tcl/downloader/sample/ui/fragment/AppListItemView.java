@@ -149,7 +149,13 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Do
 
     @Override
     public void onProgress(long progress, long total) {
+        mActionButton.setNormalColor(getContext().getResources().getColor(
+                R.color.download_btn_progress));
+        mActionButton.setPressColor(getContext().getResources().getColor(
+                R.color.download_btn_progress));
         mActionButton.setText(Math.round(progress * 100.0f / total) + "%");
+        mActionButton.setProgress(Math.round(progress * 100.0f / total));
+        mActionButton.setProgressState(true);
     }
 
     @Override

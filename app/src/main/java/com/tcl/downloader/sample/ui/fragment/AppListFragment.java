@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.alibaba.fastjson.JSON;
 import com.tcl.downloader.sample.R;
 import com.tcl.downloader.sample.support.sdk.SDK;
 import com.tcl.downloader.sample.support.sdk.bean.AppBean;
@@ -73,7 +74,10 @@ public class AppListFragment extends ARecycleViewFragment<AppBean, AppBeans> {
                 page = Integer.parseInt(s1);
             }
 
-            return SDK.newInstance().getAppBeans(page);
+            AppBeans beans = SDK.newInstance().getAppBeans(page);
+            AppBean bean = beans.getItems().get(0);
+            beans.getItems().add(0, JSON.parseObject(JSON.toJSONString(bean), AppBean.class));
+            return beans;
         }
 
     }

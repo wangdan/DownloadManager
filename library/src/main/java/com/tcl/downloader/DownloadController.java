@@ -20,6 +20,8 @@ import java.util.concurrent.Executors;
  */
 public final class DownloadController {
 
+    static final String TAG = "DownloadController";
+
     private final static Hashtable<String, Vector<DownloadProxy>> mDownloadProxy = new Hashtable<>();
 
     private final static Hashtable<String, DownloadStatus> mDownloadStatus = new Hashtable<>();
@@ -48,13 +50,17 @@ public final class DownloadController {
         }
 
         Vector<DownloadProxy> downloadProxyVector = mDownloadProxy.get(key);
-        if (!mDownloadProxy.contains(key)) {
+        if (downloadProxyVector == null) {
             downloadProxyVector = new Vector<>();
             mDownloadProxy.put(key, downloadProxyVector);
+
+            DLogger.v(TAG, "new proxyVector[%s]", downloadProxyVector.toString());
         }
 
         if (!downloadProxyVector.contains(callback)) {
             downloadProxyVector.add(callback);
+
+            DLogger.v(TAG, "vector[%s] add proxy[%s]", downloadProxyVector.toString(), callback.toString());
         }
 
         DownloadStatus downloadStatus = mDownloadStatus.get(key);
@@ -96,6 +102,8 @@ public final class DownloadController {
         Vector<DownloadProxy> downloadProxyVector = mDownloadProxy.get(key);
         if (downloadProxyVector != null && downloadProxyVector.size() > 0) {
             for (DownloadProxy proxy : downloadProxyVector) {
+                DLogger.v(TAG, "proxy[%s], status = %s, progress = %s, total = %s", proxy, status.status + "", status.progress + "", status.total + "");
+
                 // 更新状态
                 proxy.onNewStatus(status);
 
@@ -118,6 +126,10 @@ public final class DownloadController {
                 // 下载中
                 else if (status.status == DownloadManager.STATUS_RUNNING) {
                     proxy.onProgress(status.progress, status.total);
+                }
+                // 初始化
+                else if (status.status == DownloadStatus.STATUS_INIT) {
+                    proxy.onInit();
                 }
             }
         }
@@ -236,6 +248,10 @@ public final class DownloadController {
                                     String uri = c.getString(c.getColumnIndex(DownloadManager.COLUMN_URI));
                                     String key = uriKeyMap.get(uri);
 
+                                    if (TextUtils.isEmpty(key) || TextUtils.isEmpty(uri)) {
+                                        continue;
+                                    }
+
                                     // 刷新UI
                                     Message message = mHandler.obtainMessage();
                                     message.getData().putString("key", key);
@@ -245,7 +261,6 @@ public final class DownloadController {
                                     if (!mDownloadStatus.containsKey(key)) {
                                         mDownloadStatus.put(key, downloadStatus);
                                     }
-                                    break;
                                 } while (c.moveToNext());
                             }
                         } catch (Throwable e) {
@@ -260,7 +275,7 @@ public final class DownloadController {
                     }
 
                     try {
-                        Thread.sleep(50);
+                        Thread.sleep(200);
                     } catch (Throwable e) {
                         DLogger.printExc(DownloadController.class, e);
                     }
