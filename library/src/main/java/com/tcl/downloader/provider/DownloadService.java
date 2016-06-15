@@ -38,6 +38,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.tcl.downloader.DownloadController;
 import com.tcl.downloader.R;
 import com.tcl.downloader.downloads.Downloads;
 import com.tcl.downloader.utils.IndentingPrintWriter;
@@ -46,6 +47,7 @@ import java.io.File;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -379,6 +381,11 @@ public class DownloadService extends Service {
 
         // Update notifications visible to user
         mNotifier.updateWith(mDownloads.values());
+        // 更新状态给UI
+        Collection<DownloadInfo> downloadInfos = mDownloads.values();
+        for (DownloadInfo downloadInfo : downloadInfos) {
+            DownloadController.refreshDownloadInfo(downloadInfo);
+        }
 
         // Set alarm when next action is in future. It's okay if the service
         // continues to run in meantime, since it will kick off an update pass.

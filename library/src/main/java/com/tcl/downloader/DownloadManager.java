@@ -32,6 +32,7 @@ import android.text.TextUtils;
 import android.util.Pair;
 
 import com.tcl.downloader.downloads.Downloads;
+import com.tcl.downloader.utils.Utils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -985,6 +986,9 @@ public class DownloadManager {
         ContentValues values = request.toContentValues(mPackageName);
         Uri downloadUri = mResolver.insert(Downloads.Impl.CONTENT_URI, values);
         long id = Long.parseLong(downloadUri.getLastPathSegment());
+
+        DownloadController.addURI(request.mUri.toString());
+
         return id;
     }
 
@@ -1441,27 +1445,9 @@ public class DownloadManager {
         }
 
         private int translateStatus(int status) {
-            switch (status) {
-                case Downloads.Impl.STATUS_PENDING:
-                    return STATUS_PENDING;
-
-                case Downloads.Impl.STATUS_RUNNING:
-                    return STATUS_RUNNING;
-
-                case Downloads.Impl.STATUS_PAUSED_BY_APP:
-                case Downloads.Impl.STATUS_WAITING_TO_RETRY:
-                case Downloads.Impl.STATUS_WAITING_FOR_NETWORK:
-                case Downloads.Impl.STATUS_QUEUED_FOR_WIFI:
-                    return STATUS_PAUSED;
-
-                case Downloads.Impl.STATUS_SUCCESS:
-                    return STATUS_SUCCESSFUL;
-
-                default:
-                    assert Downloads.Impl.isStatusError(status);
-                    return STATUS_FAILED;
-            }
+            return Utils.translateStatus(status);
         }
+
     }
 
     public ContentResolver getResolver() {

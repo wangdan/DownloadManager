@@ -5,12 +5,12 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.text.TextUtils;
 import android.util.LruCache;
 
+import com.tcl.downloader.provider.DownloadInfo;
+import com.tcl.downloader.utils.Utils;
+
 import java.io.Serializable;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,11 +28,25 @@ public final class DownloadController {
     private final static Vector<IDownloadSubject> mDownloadProxy = new Vector<>();
     // 下载状态缓存，最多缓存50个
     private final static LruCache<String, DownloadStatus> mStatusCache = new LruCache<>(50);
-    // 死循环查询下载状态的线程
-    private final static DownloadStatusThread mDownloadStatusThread = new DownloadStatusThread();
+
+    private final static Handler mHandler = new Handler(Looper.getMainLooper()) {
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+
+            if (msg.what == 0) {
+                String uri = msg.getData().getString("uri");
+                DownloadStatus status = (DownloadStatus) msg.getData().getSerializable("status");
+
+                notifyDownloadStatus(uri, status);
+            }
+        }
+
+    };
 
     static {
-        mDownloadStatusThread.start();
+//        mDownloadStatusThread.start();
     }
 
     private DownloadController() {
@@ -64,9 +78,9 @@ public final class DownloadController {
 
     // 查询一次Status状态
     static DownloadStatus queryStatus(String uri) {
-        DownloadStatus downloadStatus = mStatusCache.get(generateMD5(uri));
+        DownloadStatus downloadStatus = mStatusCache.get(Utils.generateMD5(uri));
         if (downloadStatus != null) {
-            refreshDownloasStatus(uri, downloadStatus);
+            notifyDownloadStatus(uri, downloadStatus);
         }
         else {
             new QueryStatusTask(uri).start();
@@ -75,26 +89,52 @@ public final class DownloadController {
         return downloadStatus;
     }
 
-    synchronized static void addStatus(String uri, DownloadStatus status) {
-        String key = generateMD5(uri);
-        if (mStatusCache.get(key) == null) {
-            mStatusCache.put(generateMD5(uri), status);
+    static void addStatus(String uri, DownloadStatus status) {
+        synchronized (mStatusCache) {
+            String key = Utils.generateMD5(uri);
+            if (mStatusCache.get(key) == null) {
+                mStatusCache.put(Utils.generateMD5(uri), status);
 
-            DLogger.v(TAG, "new status[%s]", status.toString());
-        }
-        else if (mStatusCache.get(key) != status) {
-            mStatusCache.get(key).copy(status);
-        }
-    }
-
-    private static void refreshDownloasStatus(String uri, DownloadStatus status) {
-        for (IDownloadSubject proxy : mDownloadProxy) {
-            proxy.notifyDownload(uri, status);
+                DLogger.v(TAG, "new status[%s]", status.toString());
+            }
+            else if (mStatusCache.get(key) != status) {
+                mStatusCache.get(key).copy(status);
+            }
         }
     }
 
-    static void onDestory() {
-        mDownloadStatusThread.onDestory();
+    private static void notifyDownloadStatus(String uri, DownloadStatus status) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            for (IDownloadSubject proxy : mDownloadProxy) {
+                proxy.notifyDownload(uri, status);
+            }
+        }
+        else {
+            Message message = mHandler.obtainMessage();
+            message.what = 0;
+            message.getData().putString("uri", uri);
+            message.getData().putSerializable("status", status);
+            message.sendToTarget();
+        }
+    }
+
+    public static void refreshDownloadInfo(DownloadInfo downloadInfo) {
+        String uri = downloadInfo.mUri;
+        DownloadStatus status = mStatusCache.get(Utils.generateMD5(uri));
+
+        synchronized (mStatusCache) {
+            if (status == null) {
+                status = new DownloadStatus();
+                addStatus(uri, status);
+            }
+
+            status.status = Utils.translateStatus(downloadInfo.mStatus);
+            status.progress = downloadInfo.mCurrentBytes;
+            status.total = downloadInfo.mTotalBytes;
+
+        }
+
+        notifyDownloadStatus(uri, status);
     }
 
     static final ExecutorService mQueryStatusTaskPool = Executors.newSingleThreadExecutor();
@@ -108,7 +148,7 @@ public final class DownloadController {
 
         @Override
         protected DownloadStatus doInBackground(Void... params) {
-            DownloadStatus downloadStatus = mStatusCache.get(generateMD5(uri));
+            DownloadStatus downloadStatus = mStatusCache.get(Utils.generateMD5(uri));
 
             if (downloadStatus == null) {
                 DownloadManager.Query query = new DownloadManager.Query();
@@ -119,9 +159,15 @@ public final class DownloadController {
                     if (c != null) {
                         try {
                             if (c.moveToFirst()) {
-                                downloadStatus = DownloadStatusThread.getStatus(uri, c);
+                                downloadStatus = mStatusCache.get(Utils.generateMD5(uri));
+                                if (downloadStatus == null) {
+                                    downloadStatus = new DownloadStatus();
+                                    addStatus(uri, downloadStatus);
+                                }
 
-                                addStatus(uri, downloadStatus);
+                                downloadStatus.status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
+                                downloadStatus.progress = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                                downloadStatus.total = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
                             }
                         } catch (Throwable e) {
                             DLogger.printExc(DownloadController.class, e);
@@ -143,101 +189,11 @@ public final class DownloadController {
         protected void onPostExecute(DownloadStatus downloadStatus) {
             super.onPostExecute(downloadStatus);
 
-            refreshDownloasStatus(uri, downloadStatus);
+            notifyDownloadStatus(uri, downloadStatus);
         }
 
         void start() {
             executeOnExecutor(mQueryStatusTaskPool);
-        }
-
-    }
-
-    static class DownloadStatusThread extends Thread {
-
-        private boolean destory = false;
-
-        private Handler mHandler = new Handler(Looper.getMainLooper()) {
-
-            @Override
-            public void handleMessage(Message msg) {
-                super.handleMessage(msg);
-
-                String uri = msg.getData().getString("uri");
-                DownloadStatus status = (DownloadStatus) msg.getData().getSerializable("status");
-
-                refreshDownloasStatus(uri, status);
-            }
-
-        };
-
-        static DownloadStatus getStatus(String uri, Cursor c) {
-            DownloadStatus downloadStatus = mStatusCache.get(generateMD5(uri));
-            if (downloadStatus == null) {
-                downloadStatus = new DownloadStatus();
-            }
-
-            downloadStatus.status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
-            downloadStatus.progress = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
-            downloadStatus.total = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
-            //                                    downloadStatus.error = DownloadManager.column_
-
-            return downloadStatus;
-        }
-
-        @Override
-        public void run() {
-            super.run();
-
-            while (!destory) {
-                DownloadManager.Query query = new DownloadManager.Query();
-                DownloadManager downloadManager = DownloadManager.getInstance();
-                if (downloadManager != null) {
-                    Cursor c = downloadManager.query(query);
-                    if (c != null) {
-                        try {
-                            if (c.moveToFirst()) {
-                                do {
-                                    String uri = c.getString(c.getColumnIndex(DownloadManager.COLUMN_URI));
-
-                                    if (TextUtils.isEmpty(uri)) {
-                                        continue;
-                                    }
-
-                                    // 获取最新的状态
-                                    DownloadStatus downloadStatus = getStatus(uri, c);
-                                    addStatus(uri, downloadStatus);
-
-                                    DLogger.v(TAG, "status[%d], progress[%s], total[%s], uri[%s]", downloadStatus.status, downloadStatus.progress + "", downloadStatus.total + "", uri);
-
-                                    // 刷新UI
-                                    Message message = mHandler.obtainMessage();
-                                    message.getData().putString("uri", uri);
-                                    message.getData().putSerializable("status", downloadStatus);
-                                    message.sendToTarget();
-                                } while (c.moveToNext());
-                            }
-                        } catch (Throwable e) {
-                            DLogger.printExc(DownloadController.class, e);
-                        } finally {
-                            try {
-                                c.close();
-                            } catch (Throwable e) {
-                                DLogger.printExc(DownloadController.class, e);
-                            }
-                        }
-                    }
-
-                    try {
-                        Thread.sleep(200);
-                    } catch (Throwable e) {
-                        DLogger.printExc(DownloadController.class, e);
-                    }
-                }
-            }
-        }
-
-        void onDestory() {
-            destory = true;
         }
 
     }
@@ -266,48 +222,6 @@ public final class DownloadController {
             progress = newStatus.progress;
         }
 
-    }
-
-//    public interface DownloadProxy {
-//
-//        void onNewStatus(DownloadStatus status);
-
-//        void onInit();
-//
-//        void onProgress(long progress, long total);
-//
-//        void onPaused();
-//
-//        void onPending();
-//
-//        void onSuccessful();
-//
-//        void onFailed(int error);
-//
-//        String generateKey(String uri);
-
-//    }
-
-    static String generateMD5(String key) {
-        try {
-            MessageDigest e = MessageDigest.getInstance("MD5");
-            e.update(key.getBytes());
-            byte[] bytes = e.digest();
-            StringBuilder sb = new StringBuilder();
-
-            for(int i = 0; i < bytes.length; ++i) {
-                String hex = Integer.toHexString(255 & bytes[i]);
-                if(hex.length() == 1) {
-                    sb.append('0');
-                }
-
-                sb.append(hex);
-            }
-
-            return sb.toString();
-        } catch (NoSuchAlgorithmException var6) {
-            return String.valueOf(key.hashCode());
-        }
     }
 
 }

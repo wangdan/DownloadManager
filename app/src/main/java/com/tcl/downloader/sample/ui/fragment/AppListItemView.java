@@ -168,10 +168,10 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
                 long progress = status.progress;
                 long total = status.total;
 
-                Logger.w(TAG, "app[%s], status[%d], progress[%s]", mApp.getName(), status.status, Math.round(progress * 100.0f / total) + "%");
+                Logger.v(TAG, "app[%s], status[%d], progress[%s]", mApp.getName(), status.status, Math.round(progress * 100.0f / total) + "%");
             }
             else {
-                Logger.w(TAG, "app[%s], status[%d], error[%d]", mApp.getName(), status.status, status.error);
+                Logger.v(TAG, "app[%s], status[%d], error[%d]", mApp.getName(), status.status, status.error);
             }
         }
 
