@@ -986,9 +986,6 @@ public class DownloadManager {
         ContentValues values = request.toContentValues(mPackageName);
         Uri downloadUri = mResolver.insert(Downloads.Impl.CONTENT_URI, values);
         long id = Long.parseLong(downloadUri.getLastPathSegment());
-
-        DownloadController.addURI(request.mUri.toString());
-
         return id;
     }
 
