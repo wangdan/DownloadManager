@@ -98,7 +98,7 @@ public class DownloadService extends Service {
      */
     @GuardedBy("mDownloads")
     private final Map<Long, DownloadInfo> mDownloads = Maps.newHashMap();
-    private final Map<Long, Boolean> mDownloadCompleted = Maps.newHashMap();
+    private final Map<Long, Boolean> mDownloadCompleted = Maps.newHashMap();// 保存已完成的状态
 
     private ExecutorService mExecutor;
 
@@ -135,7 +135,7 @@ public class DownloadService extends Service {
         return executor;
     }
 
-    private DownloadScanner mScanner;
+//    private DownloadScanner mScanner;
 
     private HandlerThread mUpdateThread;
     private Handler mUpdateHandler;
@@ -190,7 +190,7 @@ public class DownloadService extends Service {
         mUpdateThread.start();
         mUpdateHandler = new Handler(mUpdateThread.getLooper(), mUpdateCallback);
 
-        mScanner = new DownloadScanner(this);
+//        mScanner = new DownloadScanner(this);
 
         mNotifier = new DownloadNotifier(this);
         mNotifier.cancelAll();
@@ -214,7 +214,7 @@ public class DownloadService extends Service {
     @Override
     public void onDestroy() {
         getContentResolver().unregisterContentObserver(mObserver);
-        mScanner.shutdown();
+//        mScanner.shutdown();
         mUpdateThread.quit();
         if (Constants.LOGVV) {
             Log.v(Constants.TAG, "Service onDestroy");
@@ -298,7 +298,7 @@ public class DownloadService extends Service {
                 if (stopSelfResult(startId)) {
                     if (DEBUG_LIFECYCLE) Log.v(TAG, "Nothing left; stopped");
                     getContentResolver().unregisterContentObserver(mObserver);
-                    mScanner.shutdown();
+//                    mScanner.shutdown();
                     mUpdateThread.quit();
                 }
             }
@@ -335,13 +335,35 @@ public class DownloadService extends Service {
             final int idColumn = cursor.getColumnIndexOrThrow(Downloads.Impl._ID);
             while (cursor.moveToNext()) {
                 final long id = cursor.getLong(idColumn);
-                staleIds.remove(id);
 
                 DownloadInfo info = mDownloads.get(id);
                 if (info != null) {
                     updateDownload(reader, info, now);
                 } else {
                     info = insertDownloadLocked(reader, now);
+                }
+
+                try {
+                    String localUri = cursor.getString(cursor.getColumnIndexOrThrow(Downloads.Impl._DATA));
+                    if (!TextUtils.isEmpty(localUri)) {
+                        File file = new File(localUri);
+                        if (file.exists()) {
+                            staleIds.remove(id);
+                        }
+                        else {
+                            DownloadController.refreshDownloadDeleted(info);
+                            DLogger.w(TAG, "remove id[%s], localUri[%s]", id + "", localUri);
+                        }
+                    }
+                    else {
+                        if (!info.mDeleted)
+                            staleIds.remove(id);
+                    }
+                } catch (Throwable e) {
+                    e.printStackTrace();
+
+                    if (!info.mDeleted)
+                        staleIds.remove(id);
                 }
 
                 if (info.mDeleted) {
@@ -352,13 +374,12 @@ public class DownloadService extends Service {
 
                     deleteFileIfExists(info.mFileName);
                     resolver.delete(info.getAllDownloadsUri(), null, null);
-
                 } else {
                     // Kick off download task if ready
                     final boolean activeDownload = info.startDownloadIfReady(mExecutor);
 
                     // Kick off media scan if completed
-                    final boolean activeScan = info.startScanIfReady(mScanner);
+                    final boolean activeScan = mDownloads.size() > 0; // info.startScanIfReady(mScanner);
 
                     if (DEBUG_LIFECYCLE && (activeDownload || activeScan)) {
                         Log.v(TAG, "Download " + info.mId + ": activeDownload=" + activeDownload
@@ -387,12 +408,6 @@ public class DownloadService extends Service {
         // 更新状态给UI
         for (DownloadInfo downloadInfo : downloadInfos) {
             if (isNotifyStatus(downloadInfo.mId, downloadInfo.mStatus)) {
-                DLogger.v(TAG, "title[%s], progress[%s], total[%s], per[%s], uri[%s]",
-                        downloadInfo.mTitle,
-                        downloadInfo.mCurrentBytes + "",
-                        downloadInfo.mTotalBytes + "",
-                        String.valueOf(downloadInfo.mCurrentBytes * 100 / downloadInfo.mTotalBytes) + "%",
-                        downloadInfo.mUri);
                 DownloadController.refreshDownloadInfo(downloadInfo);
             }
         }
@@ -458,17 +473,19 @@ public class DownloadService extends Service {
      */
     private void deleteDownloadLocked(long id) {
         DownloadInfo info = mDownloads.get(id);
-        if (info.mStatus == Downloads.Impl.STATUS_RUNNING) {
-            info.mStatus = Downloads.Impl.STATUS_CANCELED;
-        }
-        if (info.mDestination != Downloads.Impl.DESTINATION_EXTERNAL && info.mFileName != null) {
-            if (Constants.LOGVV) {
-                Log.d(TAG, "deleteDownloadLocked() deleting " + info.mFileName);
+        if (info != null) {
+            if (info.mStatus == Downloads.Impl.STATUS_RUNNING) {
+                info.mStatus = Downloads.Impl.STATUS_CANCELED;
             }
-            deleteFileIfExists(info.mFileName);
+            if (info.mDestination != Downloads.Impl.DESTINATION_EXTERNAL && info.mFileName != null) {
+                if (Constants.LOGVV) {
+                    Log.d(TAG, "deleteDownloadLocked() deleting " + info.mFileName);
+                }
+                deleteFileIfExists(info.mFileName);
+            }
+            mDownloads.remove(info.mId);
+            mDownloadCompleted.remove(info.mId);
         }
-        mDownloads.remove(info.mId);
-        mDownloadCompleted.remove(info.mId);
     }
 
     private void deleteFileIfExists(String path) {

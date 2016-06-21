@@ -2,13 +2,13 @@ package com.tcl.downloader.sample.ui.fragment;
 
 import android.content.Context;
 import android.net.Uri;
-import android.os.Environment;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
 
+import com.tcl.downloader.DLogger;
 import com.tcl.downloader.DownloadController;
 import com.tcl.downloader.DownloadManager;
 import com.tcl.downloader.IDownloadObserver;
@@ -62,6 +62,7 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
 
     private IDownloadSubject mProxy;
     private AppBean mApp;
+    private DownloadController.DownloadStatus mStatus;
 
     public AppListItemView(Context context, View itemView, IDownloadSubject proxy) {
         super(context, itemView);
@@ -134,16 +135,23 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
     @Override
     public void onClick(View v) {
         if (v == mActionButton) {
-            AppBean app = (AppBean) mActionButton.getTag();
-
             DownloadManager downloadManager = DownloadManager.getInstance();
-            Uri uri = Uri.parse(app.getApk_url());
-            DownloadManager.Request request = new DownloadManager.Request(uri);
-            request.setVisibleInDownloadsUi(true);// 文件可以被系统的Downloads应用扫描到并管理
-            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
-            request.setTitle(app.getName());
-            request.setDestinationUri(Uri.fromFile(new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES) + "/" + app.getName() +  ".apk")));
-            final long reference = downloadManager.enqueue(request);
+
+            if (mStatus == null || mStatus.status == -1) {
+                AppBean app = (AppBean) mActionButton.getTag();
+
+                Uri uri = Uri.parse(app.getApk_url());
+                DownloadManager.Request request = new DownloadManager.Request(uri);
+                request.setVisibleInDownloadsUi(true);// 文件可以被系统的Downloads应用扫描到并管理
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+                request.setTitle(app.getName());
+                request.setDestinationUri(Uri.fromFile(new File(getContext().getExternalFilesDir("apk") + "/" + app.getName() +  ".apk")));
+                final long reference = downloadManager.enqueue(request);
+                DLogger.d(TAG, "enqueue reference[%s]", reference + "");
+            }
+            else {
+                downloadManager.remove(mStatus.id);
+            }
         }
     }
 
@@ -158,20 +166,28 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
 
     @Override
     public void onDownloadPrepare() {
+        mStatus = null;
         mActionButton.setText("下载");
+
+        mActionButton.setNormalColor(getContext().getResources().getColor(
+                R.color.download_btn_normal));
+        mActionButton.setPressColor(getContext().getResources().getColor(
+                R.color.download_btn_normal));
     }
 
     @Override
     public void onDownloadChanged(DownloadController.DownloadStatus status) {
+        mStatus = status;
+
         if (mApp != null) {
             if (status.progress > 0 && status.total > 0) {
                 long progress = status.progress;
                 long total = status.total;
 
-                Logger.v(TAG, "app[%s], status[%d], progress[%s]", mApp.getName(), status.status, Math.round(progress * 100.0f / total) + "%");
+                Logger.v(TAG, "app[%s], status[%d], progress[%s], local_uri[%s], reason[%s]", mApp.getName(), status.status, Math.round(progress * 100.0f / total) + "%", status.localUri, status.reason);
             }
             else {
-                Logger.v(TAG, "app[%s], status[%d], error[%d]", mApp.getName(), status.status, status.error);
+                Logger.v(TAG, "app[%s], status[%d], reason[%s], local_uri[%s]", mApp.getName(), status.status, status.reason , status.localUri);
             }
         }
 

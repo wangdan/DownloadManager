@@ -33,6 +33,7 @@ import android.util.Log;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.tcl.downloader.DLogger;
 import com.tcl.downloader.R;
 import com.tcl.downloader.downloads.Downloads;
 import com.tcl.downloader.utils.LongSparseLongArray;
@@ -116,6 +117,11 @@ public class DownloadNotifier {
      * {@link DownloadInfo}, adding, collapsing, and removing as needed.
      */
     public void updateWith(Collection<DownloadInfo> downloads) {
+        DLogger.v(TAG, "begin updateWith");
+        for (DownloadInfo info : downloads)
+            DLogger.v(TAG, "Info[%s], deleted[%s]", info.mTitle, info.mDeleted + "");
+        DLogger.v(TAG, "end updateWith");
+
         synchronized (mActiveNotifs) {
             updateWithLocked(downloads);
         }
@@ -128,6 +134,7 @@ public class DownloadNotifier {
         final Multimap<String, DownloadInfo> clustered = ArrayListMultimap.create();
         for (DownloadInfo info : downloads) {
             final String tag = buildNotificationTag(info);
+            DLogger.d(TAG, "buildNotificationTag, Download[%s], status[%d] , tag[%s]", info.mTitle, info.mStatus, tag + "");
             if (tag != null) {
                 clustered.put(tag, info);
             }
