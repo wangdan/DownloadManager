@@ -356,17 +356,17 @@ public class DownloadService extends Service {
                         }
                     }
                     else {
-                        if (!info.mDeleted)
-                            staleIds.remove(id);
+                        staleIds.remove(id);
                     }
                 } catch (Throwable e) {
                     e.printStackTrace();
 
-                    if (!info.mDeleted)
-                        staleIds.remove(id);
+                    staleIds.remove(id);
                 }
 
                 if (info.mDeleted) {
+                    staleIds.add(id);
+
                     // Delete download if requested, but only after cleaning up
                     if (!TextUtils.isEmpty(info.mMediaProviderUri)) {
                         resolver.delete(Uri.parse(info.mMediaProviderUri), null, null);
@@ -397,20 +397,23 @@ public class DownloadService extends Service {
             cursor.close();
         }
 
-        // Clean up stale downloads that disappeared
-        for (Long id : staleIds) {
-            deleteDownloadLocked(id);
-        }
-
         // Update notifications visible to user
         Collection<DownloadInfo> downloadInfos = mDownloads.values();
-        mNotifier.updateWith(downloadInfos);
         // 更新状态给UI
         for (DownloadInfo downloadInfo : downloadInfos) {
             if (isNotifyStatus(downloadInfo.mId, downloadInfo.mStatus)) {
                 DownloadController.refreshDownloadInfo(downloadInfo);
             }
         }
+
+        // Clean up stale downloads that disappeared
+        for (Long id : staleIds) {
+            deleteDownloadLocked(id);
+        }
+
+        // Update notifications visible to user
+        downloadInfos = mDownloads.values();
+        mNotifier.updateWith(downloadInfos);
 
         // Set alarm when next action is in future. It's okay if the service
         // continues to run in meantime, since it will kick off an update pass.
