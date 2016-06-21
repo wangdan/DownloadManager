@@ -375,7 +375,7 @@ public class DownloadService extends Service {
                     final boolean activeDownload = info.startDownloadIfReady(mExecutor);
 
                     // Kick off media scan if completed
-                    final boolean activeScan = mDownloads.size() > 0; // info.startScanIfReady(mScanner);
+                    final boolean activeScan = false; // info.startScanIfReady(mScanner);
 
                     if (DEBUG_LIFECYCLE && (activeDownload || activeScan)) {
                         Log.v(TAG, "Download " + info.mId + ": activeDownload=" + activeDownload
