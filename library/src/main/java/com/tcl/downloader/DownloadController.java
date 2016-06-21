@@ -131,9 +131,10 @@ public final class DownloadController {
             status.id = downloadInfo.mId;
             status.uri = downloadInfo.mUri;
             status.destination = 0;
-            status.title = null;
+            status.title = downloadInfo.mTitle;
             status.description = null;
-            status.localUri = null;
+            status.localUri = downloadInfo.mFileName;
+            status.deleted = true;
         }
 
         notifyDownloadStatus(uri, status);

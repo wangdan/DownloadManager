@@ -343,24 +343,20 @@ public class DownloadService extends Service {
                     info = insertDownloadLocked(reader, now);
                 }
 
-                try {
-                    String localUri = cursor.getString(cursor.getColumnIndexOrThrow(Downloads.Impl._DATA));
-                    if (!TextUtils.isEmpty(localUri)) {
-                        File file = new File(localUri);
-                        if (file.exists()) {
-                            staleIds.remove(id);
-                        }
-                        else {
-                            DownloadController.refreshDownloadDeleted(info);
-                            DLogger.w(TAG, "remove id[%s], localUri[%s]", id + "", localUri);
-                        }
-                    }
-                    else {
+                String localUri = cursor.getString(cursor.getColumnIndexOrThrow(Downloads.Impl._DATA));
+                if (!TextUtils.isEmpty(localUri)) {
+                    // 文件不存在，就清理掉
+                    File file = new File(localUri);
+                    if (file.exists()) {
                         staleIds.remove(id);
                     }
-                } catch (Throwable e) {
-                    e.printStackTrace();
+                    else {
+                        DownloadController.refreshDownloadDeleted(info);
 
+                        DLogger.w(TAG, "remove id[%s], name[%s], localUri[%s]", id + "", info.mTitle, info.mFileName);
+                    }
+                }
+                else {
                     staleIds.remove(id);
                 }
 
@@ -431,6 +427,13 @@ public class DownloadService extends Service {
         return isActive;
     }
 
+    /**
+     * 是否刷新UI
+     *
+     * @param id
+     * @param status
+     * @return
+     */
     private boolean isNotifyStatus(long id, int status) {
         if (status == Downloads.Impl.STATUS_QUEUED_FOR_WIFI ||
                 status == Downloads.Impl.STATUS_RUNNING) {
