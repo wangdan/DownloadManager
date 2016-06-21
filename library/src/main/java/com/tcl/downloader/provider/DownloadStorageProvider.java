@@ -69,7 +69,7 @@ public class DownloadStorageProvider extends DocumentsProvider {
 
     @Override
     public boolean onCreate() {
-        mDm = DownloadManager.setup(getContext().getContentResolver(), getContext().getPackageName());
+        mDm = new DownloadManager.Builder(getContext()).build();
         mDm.setAccessAllDownloads(true);
         return true;
     }

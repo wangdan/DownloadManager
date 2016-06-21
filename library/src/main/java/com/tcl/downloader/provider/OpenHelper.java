@@ -63,7 +63,7 @@ public class OpenHelper {
      * subtleties around installing packages.
      */
     private static Intent buildViewIntent(Context context, long id) {
-        final DownloadManager downManager = DownloadManager.setup(context.getContentResolver(), context.getPackageName());
+        final DownloadManager downManager = new DownloadManager.Builder(context).build();
         downManager.setAccessAllDownloads(true);
 
         final Cursor cursor = downManager.query(new DownloadManager.Query().setFilterById(id));
