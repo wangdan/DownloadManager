@@ -78,9 +78,14 @@ public final class DownloadController {
     static DownloadStatus queryStatus(String uri) {
         DownloadStatus downloadStatus = mStatusCache.get(Utils.generateMD5(uri));
         if (downloadStatus != null) {
+            DLogger.v(TAG, "queryStatus, notifyDownloadStatus(%s, %s)",
+                                Downloads.Impl.translateStatus(downloadStatus.status), uri);
+
             notifyDownloadStatus(uri, downloadStatus);
         }
         else {
+            DLogger.v(TAG, "queryStatus, QueryStatusTask(%s)", uri);
+
             new QueryStatusTask(uri).start();
         }
 
@@ -105,7 +110,9 @@ public final class DownloadController {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             for (IDownloadSubject proxy : mDownloadProxy) {
                 if (status != null)
-                    DLogger.v(TAG, "Info[%s], Status[%s]", status.title, Downloads.Impl.statusToString(status.status));
+                    DLogger.v(TAG, "notifyDownloadStatus, Info[%s], Status[%s]", status.title, Downloads.Impl.statusToString(status.status));
+                else
+                    DLogger.v(TAG, "notifyDownloadStatus, DownloadStatus is null");
 
                 proxy.notifyDownload(uri, status);
             }
@@ -226,6 +233,12 @@ public final class DownloadController {
                         }
                     }
                 }
+            }
+
+            if (downloadStatus == null) {
+                downloadStatus = new DownloadStatus();
+
+                addStatus(Utils.generateMD5(uri), downloadStatus);
             }
 
             return downloadStatus;

@@ -2,6 +2,8 @@ package com.tcl.downloader;
 
 import android.text.TextUtils;
 
+import com.tcl.downloader.provider.Constants;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,7 +12,7 @@ import java.util.List;
  */
 public class DownloadProxy implements IDownloadSubject {
 
-    static final String TAG = "DownloadProxy";
+    static final String TAG = Constants.TAG + "_DownloadProxy";
 
     private final List<IDownloadObserver> observers;
 
@@ -23,10 +25,11 @@ public class DownloadProxy implements IDownloadSubject {
         if (observer != null && !observers.contains(observer)) {
             observers.add(observer);
 
-            // 查询一次状态
-            if (!TextUtils.isEmpty(observer.downloadURI()))
-                DownloadController.queryStatus(observer.downloadURI());
         }
+
+        // 查询一次状态
+        if (!TextUtils.isEmpty(observer.downloadURI()))
+            DownloadController.queryStatus(observer.downloadURI());
     }
 
     @Override
@@ -38,7 +41,7 @@ public class DownloadProxy implements IDownloadSubject {
     @Override
     public void notifyDownload(String uri, DownloadController.DownloadStatus status) {
         if (status != null)
-            DLogger.v(TAG, "status[%d], progress[%s], total[%s], uri[%s]", status.status, status.progress + "", status.total + "", uri);
+            DLogger.v(TAG, "notifyDownload, status[%d], progress[%s], total[%s], uri[%s]", status.status, status.progress + "", status.total + "", uri);
 
         for (IDownloadObserver observer : observers) {
             if (!TextUtils.isEmpty(observer.downloadURI()) && observer.downloadURI().equals(uri)) {
