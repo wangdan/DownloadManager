@@ -3,6 +3,10 @@ package com.tcl.downloader;
 import android.content.Context;
 import android.util.Log;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.UnknownHostException;
+
 public class DLogger {
 
 	public final static String TAG = "DLogger";
@@ -20,8 +24,6 @@ public class DLogger {
 			String log = toJson(o);
 
 			Log.v(TAG, log);
-
-			DLogger2File.log2File(TAG, log);
 		}
 
 	}
@@ -31,8 +33,14 @@ public class DLogger {
 			String log = toJson(o);
 
 			Log.v(tag, log);
+		}
+	}
 
-			DLogger2File.log2File(tag, log);
+	public static void v(String tag, String msg, Throwable tr) {
+		if (DEBUG) {
+			String log = msg + '\n' + getStackTraceString(tr);
+
+			Log.v(tag, log);
 		}
 	}
 
@@ -41,8 +49,6 @@ public class DLogger {
 			String log = String.format(format, args);
 
 			Log.v(tag, log);
-
-			DLogger2File.log2File(tag, log);
 		}
 	}
 
@@ -51,8 +57,6 @@ public class DLogger {
 			String log = toJson(o);
 
 			Log.d(TAG, log);
-
-			DLogger2File.log2File(TAG, log);
 		}
 	}
 
@@ -61,8 +65,14 @@ public class DLogger {
 			String log = toJson(o);
 
 			Log.d(tag, log);
+		}
+	}
 
-			DLogger2File.log2File(tag, log);
+	public static void d(String tag, String msg, Throwable tr) {
+		if (DEBUG) {
+			String log = msg + '\n' + getStackTraceString(tr);
+
+			Log.d(tag, log);
 		}
 	}
 
@@ -71,8 +81,6 @@ public class DLogger {
 			String log = String.format(format, args);
 
 			Log.d(tag, log);
-
-			DLogger2File.log2File(tag, log);
 		}
 	}
 	
@@ -81,8 +89,6 @@ public class DLogger {
 			String log = toJson(o);
 
 			Log.i(TAG, log);
-
-			DLogger2File.log2File(TAG, log);
 		}
 	}
 
@@ -91,8 +97,14 @@ public class DLogger {
 			String log = toJson(o);
 
 			Log.i(tag, log);
+		}
+	}
 
-			DLogger2File.log2File(tag, log);
+	public static void i(String tag, String msg, Throwable tr) {
+		if (DEBUG) {
+			String log = msg + '\n' + getStackTraceString(tr);
+
+			Log.i(tag, log);
 		}
 	}
 	
@@ -101,8 +113,6 @@ public class DLogger {
 			String log = String.format(format, args);
 
 			Log.i(tag, log);
-
-			DLogger2File.log2File(tag, log);
 		}
 	}
 
@@ -111,8 +121,6 @@ public class DLogger {
 			String log = toJson(o);
 
 			Log.w(TAG, log);
-
-			DLogger2File.log2File(TAG, log);
 		}
 	}
 
@@ -121,8 +129,14 @@ public class DLogger {
 			String log = toJson(o);
 
 			Log.w(tag, log);
+		}
+	}
 
-			DLogger2File.log2File(tag, log);
+	public static void w(String tag, String msg, Throwable tr) {
+		if (DEBUG) {
+			String log = msg + '\n' + getStackTraceString(tr);
+
+			Log.w(tag, log);
 		}
 	}
 
@@ -131,8 +145,6 @@ public class DLogger {
 			String log = String.format(format, args);
 
 			Log.w(tag, log);
-
-			DLogger2File.log2File(tag, log);
 		}
 	}
 
@@ -141,8 +153,6 @@ public class DLogger {
 			String log = toJson(o);
 
 			Log.e(TAG, log);
-
-			DLogger2File.log2File(TAG, log);
 		}
 	}
 
@@ -151,8 +161,14 @@ public class DLogger {
 			String log = toJson(o);
 
 			Log.e(tag, log);
+		}
+	}
 
-			DLogger2File.log2File(tag, log);
+	public static void e(String tag, String msg, Throwable tr) {
+		if (DEBUG) {
+			String log = msg + '\n' + getStackTraceString(tr);
+
+			Log.e(tag, log);
 		}
 	}
 	
@@ -161,8 +177,6 @@ public class DLogger {
 			String log = String.format(format, args);
 
 			Log.e(tag, log);
-
-			DLogger2File.log2File(tag, log);
 		}
 	}
 
@@ -170,8 +184,6 @@ public class DLogger {
 	public static void sysout(String msg) {
 		try {
 			Log.v(TAG, msg);
-
-			DLogger2File.log2File(TAG, msg);
 		} catch (Throwable e) {
 		}
 	}
@@ -180,8 +192,6 @@ public class DLogger {
 		try {
 			if (DEBUG) {
 				e.printStackTrace();
-
-				DLogger2File.log2File(TAG, e);
 			}
 			else {
 				String clazzName = clazz == null ? "Unknow" : clazz.getSimpleName();
@@ -191,6 +201,28 @@ public class DLogger {
 		} catch (Throwable ee) {
 			ee.printStackTrace();
 		}
+	}
+
+	static String getStackTraceString(Throwable tr) {
+		if (tr == null) {
+			return "";
+		}
+
+		// This is to reduce the amount of log spew that apps do in the non-error
+		// condition of the network being unavailable.
+		Throwable t = tr;
+		while (t != null) {
+			if (t instanceof UnknownHostException) {
+				return "";
+			}
+			t = t.getCause();
+		}
+
+		StringWriter sw = new StringWriter();
+		PrintWriter pw = new PrintWriter(sw);
+		tr.printStackTrace(pw);
+		pw.flush();
+		return sw.toString();
 	}
 
 	public static String toJson(Object msg) {
