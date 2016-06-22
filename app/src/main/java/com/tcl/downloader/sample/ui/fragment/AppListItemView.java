@@ -166,7 +166,9 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
     }
 
     @Override
-    public void onDownloadPrepare() {
+    public void onDownloadInit() {
+        Logger.d(TAG, "onDownloadInit[%s]", mApp.getName());
+
         mStatus = null;
         mActionButton.setText("下载");
         mActionButton.setProgress(0);

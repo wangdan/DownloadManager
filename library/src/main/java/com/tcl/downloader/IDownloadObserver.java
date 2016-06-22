@@ -7,7 +7,7 @@ public interface IDownloadObserver {
 
     String downloadURI();
 
-    void onDownloadPrepare();
+    void onDownloadInit();
 
     void onDownloadChanged(DownloadController.DownloadStatus status);
 

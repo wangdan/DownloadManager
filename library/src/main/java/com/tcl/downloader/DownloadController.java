@@ -177,7 +177,7 @@ public final class DownloadController {
         notifyDownloadStatus(uri, status);
     }
 
-    static final ExecutorService mQueryStatusTaskPool = Executors.newSingleThreadExecutor();
+    static final ExecutorService mQueryStatusTaskPool = Executors.newFixedThreadPool(5);
     static class QueryStatusTask extends AsyncTask<Void, Void, DownloadStatus> {
 
         String uri;
