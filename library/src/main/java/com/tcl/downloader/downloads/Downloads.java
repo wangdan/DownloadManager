@@ -496,6 +496,24 @@ public final class Downloads {
          */
         public static final int CONTROL_PAUSED = 1;
 
+        /**
+         * 是否是下载暂停暂停状态
+         *
+         * @param status
+         * @return
+         */
+        public static boolean isStatusPaused(int status) {
+            switch (status) {
+            case STATUS_PAUSED_BY_APP:
+            case Downloads.Impl.STATUS_WAITING_TO_RETRY:
+            case Downloads.Impl.STATUS_WAITING_FOR_NETWORK:
+            case Downloads.Impl.STATUS_QUEUED_FOR_WIFI:
+                return true;
+            default:
+                return false;
+            }
+        }
+
         /*
          * Lists the states that the download manager can set on a download
          * to notify applications of the download progress.
@@ -748,6 +766,31 @@ public final class Downloads {
                 case STATUS_TOO_MANY_REDIRECTS: return "TOO_MANY_REDIRECTS";
                 case STATUS_BLOCKED: return "BLOCKED";
                 default: return Integer.toString(status);
+            }
+        }
+
+        public static int translateStatus(int status) {
+            switch (status) {
+                case Downloads.Impl.STATUS_PENDING:
+                    return com.tcl.downloader.DownloadManager.STATUS_PENDING;
+
+                case Downloads.Impl.STATUS_RUNNING:
+                    return com.tcl.downloader.DownloadManager.STATUS_RUNNING;
+
+                case Downloads.Impl.STATUS_PAUSED_BY_APP:
+                    return com.tcl.downloader.DownloadManager.STATUS_PAUSED;// wangdan, 2016-06-22, 修改暂停的定义
+
+                case Downloads.Impl.STATUS_WAITING_TO_RETRY:
+                case Downloads.Impl.STATUS_WAITING_FOR_NETWORK:
+                case Downloads.Impl.STATUS_QUEUED_FOR_WIFI:
+                    return com.tcl.downloader.DownloadManager.STATUS_WAITING;
+
+                case Downloads.Impl.STATUS_SUCCESS:
+                    return com.tcl.downloader.DownloadManager.STATUS_SUCCESSFUL;
+
+                default:
+                    assert Downloads.Impl.isStatusError(status);
+                    return com.tcl.downloader.DownloadManager.STATUS_FAILED;
             }
         }
 

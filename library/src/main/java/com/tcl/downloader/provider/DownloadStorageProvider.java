@@ -309,6 +309,7 @@ public class DownloadStorageProvider extends DocumentsProvider {
             case DownloadManager.STATUS_SUCCESSFUL:
                 break;
             case DownloadManager.STATUS_PAUSED:
+            case DownloadManager.STATUS_WAITING:
                 summary = getContext().getString(R.string.download_queued);
                 break;
             case DownloadManager.STATUS_PENDING:

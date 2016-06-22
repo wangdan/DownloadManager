@@ -31,14 +31,13 @@ import android.os.WorkSource;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
-import android.util.Log;
 import android.util.Pair;
 
+import com.tcl.downloader.DLogger;
 import com.tcl.downloader.downloads.Downloads;
 import com.tcl.downloader.provider.DownloadInfo.NetworkState;
 import com.tcl.downloader.utils.ConnectivityManagerUtils;
 import com.tcl.downloader.utils.IoUtils;
-import com.tcl.downloader.DLogger;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -64,7 +63,6 @@ import static com.tcl.downloader.downloads.Downloads.Impl.STATUS_UNHANDLED_HTTP_
 import static com.tcl.downloader.downloads.Downloads.Impl.STATUS_UNKNOWN_ERROR;
 import static com.tcl.downloader.downloads.Downloads.Impl.STATUS_WAITING_FOR_NETWORK;
 import static com.tcl.downloader.downloads.Downloads.Impl.STATUS_WAITING_TO_RETRY;
-import static com.tcl.downloader.provider.Constants.TAG;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
@@ -86,6 +84,8 @@ import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
  * disk errors fail immediately and are not retried.
  */
 public class DownloadThread implements Runnable {
+
+    private static final String TAG = Constants.TAG + "_DownloadThread";
 
     private volatile boolean mPolicyDirty;
 
@@ -264,7 +264,7 @@ public class DownloadThread implements Runnable {
             }
 
         } catch (StopRequestException e) {
-            DLogger.printExc(DownloadThread.class, e);
+            DLogger.w(TAG, "run()", e);
 
             mInfoDelta.mStatus = e.getFinalStatus();
             mInfoDelta.mErrorMsg = e.getMessage();
@@ -286,6 +286,8 @@ public class DownloadThread implements Runnable {
                 } else {
                     mInfoDelta.mNumFailed += 1;
                 }
+
+                DLogger.v(TAG, "numFailed[%d], fileName[%s]", mInfoDelta.mNumFailed, mInfoDelta.mFileName);
 
                 if (mInfoDelta.mNumFailed < Constants.MAX_RETRIES) {
                     final NetworkInfo info = mSystemFacade.getActiveNetworkInfo(mInfo.mUid);
@@ -500,7 +502,7 @@ public class DownloadThread implements Runnable {
                         Os.posix_fallocate(outFd, 0, mInfoDelta.mTotalBytes);
                     } catch (ErrnoException e) {
                         if (e.errno == OsConstants.ENOSYS || e.errno == OsConstants.ENOTSUP) {
-                            Log.w(TAG, "fallocate() not supported; falling back to ftruncate()");
+                            DLogger.w(TAG, "fallocate() not supported; falling back to ftruncate()");
                             Os.ftruncate(outFd, mInfoDelta.mTotalBytes);
                         } else {
                             throw e;
@@ -820,15 +822,15 @@ public class DownloadThread implements Runnable {
     }
 
     private void logDebug(String msg) {
-        Log.d(TAG, "[" + mId + "] " + msg);
+        DLogger.d(TAG, "[" + mId + "] " + msg);
     }
 
     private void logWarning(String msg) {
-        Log.w(TAG, "[" + mId + "] " + msg);
+        DLogger.w(TAG, "[" + mId + "] " + msg);
     }
 
     private void logError(String msg, Throwable t) {
-        Log.e(TAG, "[" + mId + "] " + msg, t);
+        DLogger.e(TAG, "[" + mId + "] " + msg, t);
     }
 
 //    private INetworkPolicyListener mPolicyListener = new INetworkPolicyListener.Stub() {

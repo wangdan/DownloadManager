@@ -8,6 +8,7 @@ import android.os.Message;
 import android.util.LruCache;
 
 import com.tcl.downloader.downloads.Downloads;
+import com.tcl.downloader.provider.Constants;
 import com.tcl.downloader.provider.DownloadInfo;
 import com.tcl.downloader.utils.Utils;
 
@@ -23,7 +24,7 @@ import java.util.concurrent.Executors;
  */
 public final class DownloadController {
 
-    static final String TAG = "DownloadController";
+    static final String TAG = Constants.TAG + "_DownloadController";
 
     // 所有注册的Proxy
     private final static Vector<IDownloadSubject> mDownloadProxy = new Vector<>();
@@ -103,6 +104,9 @@ public final class DownloadController {
     private static void notifyDownloadStatus(String uri, DownloadStatus status) {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             for (IDownloadSubject proxy : mDownloadProxy) {
+                if (status != null)
+                    DLogger.v(TAG, "Info[%s], Status[%s]", status.title, Downloads.Impl.statusToString(status.status));
+
                 proxy.notifyDownload(uri, status);
             }
         }
@@ -150,7 +154,7 @@ public final class DownloadController {
                 addStatus(uri, status);
             }
 
-            status.status = Utils.translateStatus(downloadInfo.mStatus);
+            status.status = Downloads.Impl.translateStatus(downloadInfo.mStatus);
             status.progress = downloadInfo.mCurrentBytes;
             status.total = downloadInfo.mTotalBytes;
             status.id = downloadInfo.mId;
@@ -160,6 +164,7 @@ public final class DownloadController {
             status.description = downloadInfo.mDescription;
             status.localUri = downloadInfo.mFileName;
             status.deleted = downloadInfo.mDeleted;
+            status.paused = downloadInfo.mControl;
         }
 
         notifyDownloadStatus(uri, status);
@@ -207,6 +212,7 @@ public final class DownloadController {
                                     downloadStatus.localUri = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI));
                                     downloadStatus.deleted = c.getInt(c.getColumnIndexOrThrow(Downloads.Impl.COLUMN_DELETED)) == 1;
                                     downloadStatus.reason = c.getString(c.getColumnIndexOrThrow(Downloads.Impl.COLUMN_ERROR_MSG));
+                                    downloadStatus.paused = c.getInt(c.getColumnIndexOrThrow(Downloads.Impl.COLUMN_CONTROL));
                                 } while (c.moveToNext());
                             }
                         } catch (Throwable e) {
@@ -254,6 +260,7 @@ public final class DownloadController {
         public String description;
         public String reason;
         public boolean deleted;
+        public int paused;// 1 == true
 
 //        public
 

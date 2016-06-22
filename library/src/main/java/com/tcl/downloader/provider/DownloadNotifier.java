@@ -28,7 +28,6 @@ import android.net.Uri;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
-import android.util.Log;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
@@ -47,7 +46,6 @@ import static android.app.DownloadManager.Request.VISIBILITY_VISIBLE;
 import static android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED;
 import static android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_ONLY_COMPLETION;
 import static com.tcl.downloader.downloads.Downloads.Impl.STATUS_RUNNING;
-import static com.tcl.downloader.provider.Constants.TAG;
 
 /**
  * Update {@link NotificationManager} to reflect current {@link DownloadInfo}
@@ -55,6 +53,8 @@ import static com.tcl.downloader.provider.Constants.TAG;
  * {@link PendingIntent} that launch towards {@link DownloadReceiver}.
  */
 public class DownloadNotifier {
+    
+    static final String TAG = Constants.TAG + "_DownloadNotifier";
 
     private static final int TYPE_ACTIVE = 1;
     private static final int TYPE_WAITING = 2;
@@ -101,6 +101,8 @@ public class DownloadNotifier {
      * estimated remaining time.
      */
     public void notifyDownloadSpeed(long id, long bytesPerSecond) {
+        DLogger.v(TAG, "notifyDownloadSpeed(id = %s, bytesPerSecond = %s)", id + "", bytesPerSecond + "");
+
         synchronized (mDownloadSpeed) {
             if (bytesPerSecond != 0) {
                 mDownloadSpeed.put(id, bytesPerSecond);
@@ -117,10 +119,12 @@ public class DownloadNotifier {
      * {@link DownloadInfo}, adding, collapsing, and removing as needed.
      */
     public void updateWith(Collection<DownloadInfo> downloads) {
-        DLogger.v(TAG, "begin updateWith");
-        for (DownloadInfo info : downloads)
-            DLogger.v(TAG, "Info[%s], deleted[%s]", info.mTitle, info.mDeleted + "");
-        DLogger.v(TAG, "end updateWith");
+        for (DownloadInfo info : downloads) {
+            DLogger.v(TAG, "updateWith, Info[%s], status[%s], deleted[%s]",
+                                    info.mTitle,
+                                    Downloads.Impl.statusToString(info.mStatus),
+                                    info.mDeleted + "");
+        }
 
         synchronized (mActiveNotifs) {
             updateWithLocked(downloads);
@@ -134,8 +138,9 @@ public class DownloadNotifier {
         final Multimap<String, DownloadInfo> clustered = ArrayListMultimap.create();
         for (DownloadInfo info : downloads) {
             final String tag = buildNotificationTag(info);
-            DLogger.d(TAG, "buildNotificationTag, Download[%s], status[%d] , tag[%s]", info.mTitle, info.mStatus, tag + "");
             if (tag != null) {
+                DLogger.d(TAG, "buildNotificationTag, Download[%s], status[%d] , tag[%s]", info.mTitle, info.mStatus, tag + "");
+
                 clustered.put(tag, info);
             }
         }
@@ -333,7 +338,7 @@ public class DownloadNotifier {
             for (int i = 0; i < mDownloadSpeed.size(); i++) {
                 final long id = mDownloadSpeed.keyAt(i);
                 final long delta = SystemClock.elapsedRealtime() - mDownloadTouch.get(id);
-                Log.d(TAG, "Download " + id + " speed " + mDownloadSpeed.valueAt(i) + "bps, "
+                DLogger.d(TAG, "Download " + id + " speed " + mDownloadSpeed.valueAt(i) + "bps, "
                         + delta + "ms ago");
             }
         }

@@ -32,7 +32,6 @@ import android.text.TextUtils;
 import android.util.Pair;
 
 import com.tcl.downloader.downloads.Downloads;
-import com.tcl.downloader.utils.Utils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -181,6 +180,13 @@ public class DownloadManager {
      * Value of {@link #COLUMN_STATUS} when the download has failed (and will not be retried).
      */
     public final static int STATUS_FAILED = 1 << 4;
+
+    /**
+     * 等待中...，
+     * 代表这三个状态 STATUS_WAITING_TO_RETRY、STATUS_WAITING_FOR_NETWORK、STATUS_QUEUED_FOR_WIFI
+     * 见代码 Utils.translateStatus()
+     */
+    public final static int STATUS_WAITING = 1 << 5;
 
     /**
      * Value of COLUMN_ERROR_CODE when the download has completed with an error that doesn't fit
@@ -870,6 +876,8 @@ public class DownloadManager {
                 }
                 if ((mStatusFlags & STATUS_PAUSED) != 0) {
                     parts.add(statusClause("=", Downloads.Impl.STATUS_PAUSED_BY_APP));
+                }
+                if ((mStatusFlags & STATUS_WAITING) != 0) {
                     parts.add(statusClause("=", Downloads.Impl.STATUS_WAITING_TO_RETRY));
                     parts.add(statusClause("=", Downloads.Impl.STATUS_WAITING_FOR_NETWORK));
                     parts.add(statusClause("=", Downloads.Impl.STATUS_QUEUED_FOR_WIFI));
@@ -1379,7 +1387,7 @@ public class DownloadManager {
                 case STATUS_FAILED:
                     return getErrorCode(status);
 
-                case STATUS_PAUSED:
+                case STATUS_WAITING:
                     return getPausedReason(status);
 
                 default:
@@ -1442,7 +1450,7 @@ public class DownloadManager {
         }
 
         private int translateStatus(int status) {
-            return Utils.translateStatus(status);
+            return Downloads.Impl.translateStatus(status);
         }
 
     }

@@ -32,7 +32,6 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Process;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -62,7 +61,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static android.text.format.DateUtils.MINUTE_IN_MILLIS;
-import static com.tcl.downloader.provider.Constants.TAG;
 
 /**
  * Performs background downloads as requested by applications that use
@@ -74,6 +72,9 @@ import static com.tcl.downloader.provider.Constants.TAG;
  * delivered through {@link Context#startService(Intent)}.
  */
 public class DownloadService extends Service {
+
+    public static final String TAG = Constants.TAG + "_DownloadService";
+
     // TODO: migrate WakeLock from individual DownloadThreads out into
     // DownloadReceiver to protect our entire workflow.
 
@@ -127,7 +128,7 @@ public class DownloadService extends Service {
                 }
 
                 if (t != null) {
-                    Log.w(TAG, "Uncaught exception", t);
+                    DLogger.w(TAG, "Uncaught exception", t);
                 }
             }
         };
@@ -176,9 +177,7 @@ public class DownloadService extends Service {
 
         mExecutor = buildDownloadExecutor(this);
 
-        if (Constants.LOGVV) {
-            Log.v(Constants.TAG, "Service onCreate");
-        }
+        DLogger.v(TAG, "Service onCreate");
 
         if (mSystemFacade == null) {
             mSystemFacade = new RealSystemFacade(this);
@@ -203,9 +202,7 @@ public class DownloadService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         int returnValue = super.onStartCommand(intent, flags, startId);
-        if (Constants.LOGVV) {
-            Log.v(Constants.TAG, "Service onStart");
-        }
+        DLogger.v(TAG, "Service onStart");
         mLastStartId = startId;
         enqueueUpdate();
         return returnValue;
@@ -216,9 +213,7 @@ public class DownloadService extends Service {
         getContentResolver().unregisterContentObserver(mObserver);
 //        mScanner.shutdown();
         mUpdateThread.quit();
-        if (Constants.LOGVV) {
-            Log.v(Constants.TAG, "Service onDestroy");
-        }
+        DLogger.v(TAG, "Service onDestroy");
         super.onDestroy();
     }
 
@@ -252,7 +247,7 @@ public class DownloadService extends Service {
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 
             final int startId = msg.arg1;
-            if (DEBUG_LIFECYCLE) Log.v(TAG, "Updating for startId " + startId);
+            if (DEBUG_LIFECYCLE) DLogger.v(TAG, "Updating for startId " + startId);
 
             // Since database is current source of truth, our "active" status
             // depends on database state. We always get one final update pass
@@ -271,14 +266,14 @@ public class DownloadService extends Service {
                 for (Map.Entry<Thread, StackTraceElement[]> entry :
                         Thread.getAllStackTraces().entrySet()) {
                     if (entry.getKey().getName().startsWith("pool")) {
-                        Log.d(TAG, entry.getKey() + ": " + Arrays.toString(entry.getValue()));
+                        DLogger.d(TAG, entry.getKey() + ": " + Arrays.toString(entry.getValue()));
                     }
                 }
 
                 // Dump speed and update details
                 mNotifier.dumpSpeeds();
 
-                Log.wtf(TAG, "Final update pass triggered, isActive=" + isActive
+                DLogger.w(TAG, "Final update pass triggered, isActive=" + isActive
                         + "; someone didn't update correctly.");
             }
 
@@ -296,7 +291,7 @@ public class DownloadService extends Service {
                 // will always be delivered with a new startId.
 
                 if (stopSelfResult(startId)) {
-                    if (DEBUG_LIFECYCLE) Log.v(TAG, "Nothing left; stopped");
+                    if (DEBUG_LIFECYCLE) DLogger.v(TAG, "Nothing left; stopped");
                     getContentResolver().unregisterContentObserver(mObserver);
 //                    mScanner.shutdown();
                     mUpdateThread.quit();
@@ -339,8 +334,12 @@ public class DownloadService extends Service {
                 DownloadInfo info = mDownloads.get(id);
                 if (info != null) {
                     updateDownload(reader, info, now);
+
+                    DLogger.v(TAG, "updateDownload, app[%s], status[%d]", info.mTitle, info.mStatus);
                 } else {
                     info = insertDownloadLocked(reader, now);
+
+                    DLogger.v(TAG, "insertDownloadLocked, app[%s], status[%d]", info.mTitle, info.mStatus);
                 }
 
                 String localUri = cursor.getString(cursor.getColumnIndexOrThrow(Downloads.Impl._DATA));
@@ -378,7 +377,7 @@ public class DownloadService extends Service {
                     final boolean activeScan = false; // info.startScanIfReady(mScanner);
 
                     if (DEBUG_LIFECYCLE && (activeDownload || activeScan)) {
-                        Log.v(TAG, "Download " + info.mId + ": activeDownload=" + activeDownload
+                        DLogger.v(TAG, "Download " + info.mId + ": activeDownload=" + activeDownload
                                 + ", activeScan=" + activeScan);
                     }
 
@@ -414,9 +413,7 @@ public class DownloadService extends Service {
         // Set alarm when next action is in future. It's okay if the service
         // continues to run in meantime, since it will kick off an update pass.
         if (nextActionMillis > 0 && nextActionMillis < Long.MAX_VALUE) {
-            if (Constants.LOGV) {
-                Log.v(TAG, "scheduling start in " + nextActionMillis + "ms");
-            }
+            DLogger.v(TAG, "scheduling start in " + nextActionMillis + "ms");
 
             final Intent intent = new Intent(Constants.ACTION_RETRY);
             intent.setClass(this, DownloadReceiver.class);
@@ -435,11 +432,24 @@ public class DownloadService extends Service {
      * @return
      */
     private boolean isNotifyStatus(long id, int status) {
+        DLogger.v(TAG, "isNotifyStatus(%s, %d)", id + "", status);
+        // 等待下载
         if (status == Downloads.Impl.STATUS_QUEUED_FOR_WIFI ||
                 status == Downloads.Impl.STATUS_RUNNING) {
             mDownloadCompleted.put(id, false);
             return true;
         }
+        // 下载出错
+        else if (Downloads.Impl.isStatusError(status)) {
+            mDownloadCompleted.put(id, false);
+            return true;
+        }
+        // 下载暂停
+        else if (Downloads.Impl.isStatusPaused(status)) {
+            mDownloadCompleted.put(id, false);
+            return true;
+        }
+        // 已经下载完成
         else if (Downloads.Impl.isStatusCompleted(status) && (mDownloadCompleted.get(id) == null || !mDownloadCompleted.get(id))) {
             mDownloadCompleted.put(id, true);
             return true;
@@ -456,9 +466,7 @@ public class DownloadService extends Service {
         final DownloadInfo info = reader.newDownloadInfo(this, mSystemFacade, mNotifier);
         mDownloads.put(info.mId, info);
 
-        if (Constants.LOGVV) {
-            Log.v(Constants.TAG, "processing inserted download " + info.mId);
-        }
+        DLogger.v(TAG, "processing inserted download " + info.mId);
 
         return info;
     }
@@ -468,10 +476,8 @@ public class DownloadService extends Service {
      */
     private void updateDownload(DownloadInfo.Reader reader, DownloadInfo info, long now) {
         reader.updateFromDatabase(info);
-        if (Constants.LOGVV) {
-            Log.v(Constants.TAG, "processing updated download " + info.mId +
-                    ", status: " + info.mStatus);
-        }
+        DLogger.v(TAG, "processing updated download " + info.mId +
+                ", status: " + info.mStatus);
     }
 
     /**
@@ -484,9 +490,7 @@ public class DownloadService extends Service {
                 info.mStatus = Downloads.Impl.STATUS_CANCELED;
             }
             if (info.mDestination != Downloads.Impl.DESTINATION_EXTERNAL && info.mFileName != null) {
-                if (Constants.LOGVV) {
-                    Log.d(TAG, "deleteDownloadLocked() deleting " + info.mFileName);
-                }
+                DLogger.d(TAG, "deleteDownloadLocked() deleting " + info.mFileName);
                 deleteFileIfExists(info.mFileName);
             }
             mDownloads.remove(info.mId);
@@ -496,12 +500,10 @@ public class DownloadService extends Service {
 
     private void deleteFileIfExists(String path) {
         if (!TextUtils.isEmpty(path)) {
-            if (Constants.LOGVV) {
-                Log.d(TAG, "deleteFileIfExists() deleting " + path);
-            }
+            DLogger.d(TAG, "deleteFileIfExists() deleting " + path);
             final File file = new File(path);
             if (file.exists() && !file.delete()) {
-                Log.w(TAG, "file: '" + path + "' couldn't be deleted");
+                DLogger.w(TAG, "file: '" + path + "' couldn't be deleted");
             }
         }
     }

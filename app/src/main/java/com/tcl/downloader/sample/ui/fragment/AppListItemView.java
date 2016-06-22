@@ -13,6 +13,7 @@ import com.tcl.downloader.DownloadController;
 import com.tcl.downloader.DownloadManager;
 import com.tcl.downloader.IDownloadObserver;
 import com.tcl.downloader.IDownloadSubject;
+import com.tcl.downloader.downloads.Downloads;
 import com.tcl.downloader.sample.R;
 import com.tcl.downloader.sample.support.sdk.bean.AppBean;
 import com.tcl.downloader.sample.ui.widget.ProgressButton;
@@ -185,10 +186,10 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
                 long progress = status.progress;
                 long total = status.total;
 
-                Logger.v(TAG, "app[%s], status[%d], progress[%s], local_uri[%s], reason[%s]", mApp.getName(), status.status, Math.round(progress * 100.0f / total) + "%", status.localUri, status.reason);
+                Logger.v(TAG, "app[%s], status[%s], progress[%s], local_uri[%s], reason[%s]", mApp.getName(), Downloads.Impl.statusToString(status.status), Math.round(progress * 100.0f / total) + "%", status.localUri, status.reason);
             }
             else {
-                Logger.v(TAG, "app[%s], status[%d], reason[%s], local_uri[%s]", mApp.getName(), status.status, status.reason , status.localUri);
+                Logger.v(TAG, "app[%s], status[%s], reason[%s], local_uri[%s]", mApp.getName(), Downloads.Impl.statusToString(status.status), status.reason , status.localUri);
             }
         }
 
@@ -206,7 +207,8 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
             mActionButton.setText("暂停");
         }
         // 等待
-        else if (status.status == DownloadManager.STATUS_PENDING) {
+        else if (status.status == DownloadManager.STATUS_PENDING ||
+                        status.status == DownloadManager.STATUS_WAITING) {
             mActionButton.setText("等待");
         }
         // 下载中
