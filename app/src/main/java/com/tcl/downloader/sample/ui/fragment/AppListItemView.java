@@ -168,6 +168,7 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
     public void onDownloadPrepare() {
         mStatus = null;
         mActionButton.setText("下载");
+        mActionButton.setProgress(0);
 
         mActionButton.setNormalColor(getContext().getResources().getColor(
                 R.color.download_btn_normal));
