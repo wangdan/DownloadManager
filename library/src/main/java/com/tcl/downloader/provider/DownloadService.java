@@ -365,6 +365,8 @@ public class DownloadService extends Service {
                 if (info.mDeleted) {
                     staleIds.add(id);
 
+                    DownloadController.refreshDownloadInfo(info);
+
                     // Delete download if requested, but only after cleaning up
                     if (!TextUtils.isEmpty(info.mMediaProviderUri)) {
                         resolver.delete(Uri.parse(info.mMediaProviderUri), null, null);

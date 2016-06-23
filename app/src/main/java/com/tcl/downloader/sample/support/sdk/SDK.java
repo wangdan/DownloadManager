@@ -30,8 +30,38 @@ public class SDK extends ABizLogic {
         return new SDK();
     }
 
-    public AppBeans getAppBeans(int page) throws TaskException {
+    public AppBeans getCompetitive(int page) throws TaskException {
         Setting action = newSetting("getAppBeans", "/featured", "");
+
+        Params params = new Params();
+        params.addParameter("page", String.valueOf(page));
+        params.addParameter("per_page", "10");
+
+        return doGet(action, configBasicParams(params), AppBeans.class);
+    }
+
+    public AppBeans getRanking(int page) throws TaskException {
+        Setting action = newSetting("getRanking", "/ranking/week", "");
+
+        Params params = new Params();
+        params.addParameter("page", String.valueOf(page));
+        params.addParameter("per_page", "10");
+
+        return doGet(action, configBasicParams(params), AppBeans.class);
+    }
+
+    public AppBeans getGames(int page) throws TaskException {
+        Setting action = newSetting("getGames", "/tab/game/recommend", "");
+
+        Params params = new Params();
+        params.addParameter("page", String.valueOf(page));
+        params.addParameter("per_page", "10");
+
+        return doGet(action, configBasicParams(params), AppBeans.class);
+    }
+
+    public AppBeans getApps(int page) throws TaskException {
+        Setting action = newSetting("getApps", "/tab/app/recommend", "");
 
         Params params = new Params();
         params.addParameter("page", String.valueOf(page));

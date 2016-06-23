@@ -6,7 +6,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.alibaba.fastjson.JSON;
 import com.tcl.downloader.DownloadController;
 import com.tcl.downloader.DownloadProxy;
 import com.tcl.downloader.sample.R;
@@ -26,19 +25,29 @@ import java.util.List;
 /**
  * Created by wangdan on 16/5/13.
  */
-public class AppListFragment extends ARecycleViewFragment<AppBean, AppBeans> {
+public class AppsListFragment extends ARecycleViewFragment<AppBean, AppBeans> {
 
-    public static AppListFragment newInstance() {
-        return new AppListFragment();
+    public static AppsListFragment newInstance(int type) {
+        AppsListFragment fragment = new AppsListFragment();
+
+        Bundle args = new Bundle();
+        args.putInt("type", type);
+        fragment.setArguments(args);
+
+        return fragment;
     }
 
     private DownloadProxy mDownloadProxy;
+
+    private int type;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         mDownloadProxy = new DownloadProxy();
+
+        type = getArguments().getInt("type", 1);
     }
 
     @Override
@@ -52,7 +61,7 @@ public class AppListFragment extends ARecycleViewFragment<AppBean, AppBeans> {
 
             @Override
             public IITemView<AppBean> newItemView(View view, int i) {
-                return new AppListItemView(getActivity(), view, mDownloadProxy);
+                return new AppsItemView(getActivity(), view, mDownloadProxy);
             }
 
         };
@@ -86,10 +95,18 @@ public class AppListFragment extends ARecycleViewFragment<AppBean, AppBeans> {
                 page = Integer.parseInt(s1);
             }
 
-            AppBeans beans = SDK.newInstance().getAppBeans(page);
-            AppBean bean = beans.getItems().get(0);
-            beans.getItems().add(0, JSON.parseObject(JSON.toJSONString(bean), AppBean.class));
-            return beans;
+            switch (type) {
+                case 1:
+                    return SDK.newInstance().getCompetitive(page);
+                case 2:
+                    return SDK.newInstance().getRanking(page);
+                case 3:
+                    return SDK.newInstance().getApps(page);
+                case 4:
+                    return SDK.newInstance().getGames(page);
+                default:
+                    return SDK.newInstance().getApps(page);
+            }
         }
 
     }

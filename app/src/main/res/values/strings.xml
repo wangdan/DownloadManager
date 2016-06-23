@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">DownloadManager</string>
+    <string name="app_name">应用市场-Downloader</string>
 
     <string name="download_status_no">安装</string>
     <string name="download_status_pause">继续</string>

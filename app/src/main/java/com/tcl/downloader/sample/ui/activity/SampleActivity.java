@@ -1,6 +1,5 @@
 package com.tcl.downloader.sample.ui.activity;
 
-import android.app.Activity;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -10,14 +9,16 @@ import android.util.Log;
 import com.tcl.downloader.DLogger;
 import com.tcl.downloader.DownloadManager;
 import com.tcl.downloader.sample.R;
-import com.tcl.downloader.sample.ui.fragment.AppListFragment;
+import com.tcl.downloader.sample.ui.fragment.TabsFragment;
+
+import org.aisen.android.ui.activity.basic.BaseActivity;
 
 import java.io.File;
 
 /**
  * Created by wangdan on 16/5/7.
  */
-public class SampleActivity extends Activity {
+public class SampleActivity extends BaseActivity {
 
     static final String TAG = "Sample";
 
@@ -25,7 +26,9 @@ public class SampleActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(org.aisen.android.R.layout.comm_ui_fragment_container);
-        getFragmentManager().beginTransaction().add(R.id.fragmentContainer, AppListFragment.newInstance(), "SampleFragment").commit();
+        getFragmentManager().beginTransaction().add(R.id.fragmentContainer, TabsFragment.newInstance(), "SampleFragment").commit();
+
+        getToolbar().setTitle("应用市场");
 
         if (true) return;
         new Thread() {
