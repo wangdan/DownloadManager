@@ -1078,6 +1078,10 @@ public class DownloadManager {
         }
         ContentValues values = new ContentValues();
         values.put(Downloads.Impl.COLUMN_CONTROL, type);
+        // 暂停应用时，将状态修改为暂停状态
+        if (type == Downloads.Impl.CONTROL_PAUSED) {
+            values.put(Downloads.Impl.COLUMN_STATUS, Downloads.Impl.STATUS_PAUSED_BY_APP);
+        }
         // if only one id is passed in, then include it in the uri itself.
         // this will eliminate a full database scan in the download service.
         if (ids.length == 1) {

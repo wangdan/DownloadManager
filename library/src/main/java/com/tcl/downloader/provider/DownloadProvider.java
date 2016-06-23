@@ -1059,7 +1059,8 @@ public final class DownloadProvider extends ContentProvider {
         }
 
         if (values.containsKey(Downloads.Impl.COLUMN_CONTROL)) {
-            if (values.getAsInteger(Downloads.Impl.COLUMN_CONTROL) == Downloads.Impl.CONTROL_RUN) {
+            // 设置暂停或者继续
+            if (values.getAsInteger(Downloads.Impl.COLUMN_CONTROL) != Downloads.Impl.CONTROL_NONE) {
                 startService = true;
             }
         }

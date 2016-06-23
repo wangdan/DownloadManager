@@ -123,7 +123,8 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
                 downloadManager.resume(mStatus.id);
             }
             // 下载状态，暂停下载
-            else if (mStatus.status == DownloadManager.STATUS_RUNNING) {
+            else if (mStatus.status == DownloadManager.STATUS_RUNNING ||
+                            mStatus.status == DownloadManager.STATUS_WAITING) {
                 downloadManager.pause(mStatus.id);
             }
             // 其他状态，停止下载

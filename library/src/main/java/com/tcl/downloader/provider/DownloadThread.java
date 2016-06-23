@@ -149,6 +149,15 @@ public class DownloadThread implements Runnable {
             values.put(Downloads.Impl._DATA, mFileName);
             values.put(Downloads.Impl.COLUMN_MIME_TYPE, mMimeType);
             values.put(Downloads.Impl.COLUMN_STATUS, mStatus);
+            if (mStatus == Downloads.Impl.STATUS_RUNNING) {
+                values.put(Downloads.Impl.COLUMN_CONTROL, Downloads.Impl.CONTROL_RUN);
+            }
+            else if (mStatus == Downloads.Impl.STATUS_PAUSED_BY_APP) {
+                values.put(Downloads.Impl.COLUMN_CONTROL, Downloads.Impl.CONTROL_PAUSED);
+            }
+            else {
+                values.put(Downloads.Impl.COLUMN_CONTROL, Downloads.Impl.CONTROL_NONE);
+            }
             values.put(Downloads.Impl.COLUMN_FAILED_CONNECTIONS, mNumFailed);
             values.put(Constants.RETRY_AFTER_X_REDIRECT_COUNT, mRetryAfter);
             values.put(Downloads.Impl.COLUMN_TOTAL_BYTES, mTotalBytes);
@@ -313,7 +322,6 @@ public class DownloadThread implements Runnable {
             mInfoDelta.mErrorMsg = t.toString();
 
             logError("Failed: " + mInfoDelta.mErrorMsg, t);
-
         } finally {
             logDebug("Finished with status " + Downloads.Impl.statusToString(mInfoDelta.mStatus));
 

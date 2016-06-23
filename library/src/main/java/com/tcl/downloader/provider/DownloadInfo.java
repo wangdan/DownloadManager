@@ -331,7 +331,7 @@ public class DownloadInfo {
             // the download is paused, so it's not going to start
             return false;
         }
-        else if (mControl == Impl.CONTROL_RUN) {
+        else if (mControl == Impl.CONTROL_RUN && !Downloads.Impl.isStatusSuccess(mStatus)) {
             return true;
         }
         switch (mStatus) {

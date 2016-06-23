@@ -487,6 +487,11 @@ public final class Downloads {
         public static final int DESTINATION_NON_DOWNLOADMANAGER_DOWNLOAD = 6;
 
         /**
+         * 默认值
+         */
+        public static final int CONTROL_NONE = 0;
+
+        /**
          * This download is allowed to run.
          */
         public static final int CONTROL_RUN = 1;
