@@ -1058,6 +1058,12 @@ public final class DownloadProvider extends ContentProvider {
             }
         }
 
+        if (values.containsKey(Downloads.Impl.COLUMN_CONTROL)) {
+            if (values.getAsInteger(Downloads.Impl.COLUMN_CONTROL) == Downloads.Impl.CONTROL_RUN) {
+                startService = true;
+            }
+        }
+
         ContentValues filteredValues;
         if (Binder.getCallingPid() != Process.myPid()) {
             filteredValues = new ContentValues();

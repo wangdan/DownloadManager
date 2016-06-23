@@ -1006,7 +1006,7 @@ public class DownloadManager {
      * @return the number of downloads actually updated
      * @hide
      */
-    public int markRowDeleted(long... ids) {
+    int markRowDeleted(long... ids) {
         if (ids == null || ids.length == 0) {
             // called with nothing to remove!
             throw new IllegalArgumentException("input param 'ids' can't be null");
@@ -1047,6 +1047,45 @@ public class DownloadManager {
             return null;
         }
         return new CursorTranslator(underlyingCursor, mBaseUri);
+    }
+
+    /**
+     * 暂停下载
+     *
+     * @param ids
+     * @return
+     */
+    public int pause(long... ids) {
+        return pauseOrResume(Downloads.Impl.CONTROL_PAUSED, ids);
+    }
+
+    /**
+     * 继续下载
+     *
+     * @param ids
+     * @return
+     */
+    public int resume(long... ids) {
+        return pauseOrResume(Downloads.Impl.CONTROL_RUN, ids);
+    }
+
+    int pauseOrResume(int type, long... ids) {
+        DLogger.v(TAG, "pauseOrResume(%d)", type);
+
+        if (ids == null || ids.length == 0) {
+            // called with nothing to remove!
+            throw new IllegalArgumentException("input param 'ids' can't be null");
+        }
+        ContentValues values = new ContentValues();
+        values.put(Downloads.Impl.COLUMN_CONTROL, type);
+        // if only one id is passed in, then include it in the uri itself.
+        // this will eliminate a full database scan in the download service.
+        if (ids.length == 1) {
+            return mResolver.update(ContentUris.withAppendedId(mBaseUri, ids[0]), values,
+                    null, null);
+        }
+        return mResolver.update(mBaseUri, values, getWhereClauseForIds(ids),
+                getWhereArgsForIds(ids));
     }
 
     /**
@@ -1181,18 +1220,6 @@ public class DownloadManager {
         } catch (SettingNotFoundException exc) {
             return null;
         }
-    }
-
-    /** {@hide} */
-    public static boolean isActiveNetworkExpensive(Context context) {
-        // TODO: connect to NetworkPolicyManager
-        return false;
-    }
-
-    /** {@hide} */
-    public static long getActiveNetworkWarningBytes(Context context) {
-        // TODO: connect to NetworkPolicyManager
-        return -1;
     }
 
     /**

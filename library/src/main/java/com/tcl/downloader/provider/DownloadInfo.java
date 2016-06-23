@@ -331,6 +331,9 @@ public class DownloadInfo {
             // the download is paused, so it's not going to start
             return false;
         }
+        else if (mControl == Impl.CONTROL_RUN) {
+            return true;
+        }
         switch (mStatus) {
             case 0: // status hasn't been initialized yet, this is a new download
             case Downloads.Impl.STATUS_PENDING: // download is explicit marked as ready to start

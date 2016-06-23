@@ -328,6 +328,9 @@ public class DownloadService extends Service {
         try {
             final DownloadInfo.Reader reader = new DownloadInfo.Reader(resolver, cursor);
             final int idColumn = cursor.getColumnIndexOrThrow(Downloads.Impl._ID);
+            if (cursor.getCount() == 0) {
+                DLogger.v(TAG, "cursor.getCount() = 0");
+            }
             while (cursor.moveToNext()) {
                 final long id = cursor.getLong(idColumn);
 
@@ -383,6 +386,7 @@ public class DownloadService extends Service {
 
                     isActive |= activeDownload;
                     isActive |= activeScan;
+                    isActive |= info.mControl == Downloads.Impl.CONTROL_PAUSED;
                 }
 
                 // Keep track of nearest next action

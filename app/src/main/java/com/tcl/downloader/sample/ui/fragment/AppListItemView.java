@@ -16,6 +16,7 @@ import com.tcl.downloader.IDownloadSubject;
 import com.tcl.downloader.downloads.Downloads;
 import com.tcl.downloader.sample.R;
 import com.tcl.downloader.sample.support.sdk.bean.AppBean;
+import com.tcl.downloader.sample.support.utis.Utils;
 import com.tcl.downloader.sample.ui.widget.ProgressButton;
 
 import org.aisen.android.common.utils.Logger;
@@ -25,7 +26,6 @@ import org.aisen.android.support.inject.ViewInject;
 import org.aisen.android.ui.fragment.adapter.ARecycleViewItemView;
 
 import java.io.File;
-import java.text.DecimalFormat;
 
 /**
  * Created by wangdan on 16/5/13.
@@ -78,7 +78,7 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
 
         mTitle.setText(app.getName());
         mVersion.setVisibility(View.VISIBLE);
-        mVersion.setText(formartDownloadSize(getContext(), app.getDownload_count(),
+        mVersion.setText(Utils.formartDownloadSize(getContext(), app.getDownload_count(),
                 app.getSize()));
         mRatingBar.setVisibility(View.VISIBLE);
         mRatingBar.setRating(app.getStars());
@@ -100,44 +100,12 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
         mSelfLeftMargin.setVisibility(View.GONE);
     }
 
-    public static String formartDownloadSize(Context context, long downloadTimes, long size) {
-        String downloadCount = "";
-        if (downloadTimes < 1000) {
-            downloadCount = context.getString(R.string.unit_person,
-                    String.valueOf(downloadTimes));
-        } else if (downloadTimes >= 1000 && downloadTimes < 10000) {
-            downloadCount = context.getString(
-                    R.string.unit_thousand_person,
-                    new DecimalFormat("#").format(downloadTimes / 1000));
-        } else if (downloadTimes >= 10000 && downloadTimes < 10000000) {
-            downloadCount = context.getString(
-                    R.string.unit_ten_thousand_person,
-                    new DecimalFormat("#").format(downloadTimes / 10000));
-        } else if (downloadTimes >= 10000000 && downloadTimes < 100000000) {
-            downloadCount = context.getString(
-                    R.string.unit_thousand_ten_thousand_person,
-                    new DecimalFormat("#").format(downloadTimes / 10000000));
-        } else if (downloadTimes >= 100000000 && downloadTimes < 100000000000l) {
-            downloadCount = context.getString(
-                    R.string.unit_ten_ten_thousand_person,
-                    new DecimalFormat("#").format(downloadTimes / 100000000));
-        } else if (downloadTimes >= 100000000000l) {
-            downloadCount = context.getString(
-                    R.string.unit_thousand_ten_ten_thousand_person,
-                    new DecimalFormat("#").format(downloadTimes / 100000000000l));
-        }
-        if (size > 0) {
-            return (downloadCount + "  " + (String.format("%.1fM",
-                    size / 1024.0 / 1024.0)));
-        }
-        return downloadCount;
-    }
-
     @Override
     public void onClick(View v) {
         if (v == mActionButton) {
             DownloadManager downloadManager = DownloadManager.getInstance();
 
+            // 初始化状态，开始下载
             if (mStatus == null || mStatus.status == -1) {
                 AppBean app = (AppBean) mActionButton.getTag();
 
@@ -150,6 +118,15 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
                 final long reference = downloadManager.enqueue(request);
                 DLogger.d(TAG, "enqueue reference[%s]", reference + "");
             }
+            // 暂停状态，继续下载
+            else if (mStatus.status == DownloadManager.STATUS_PAUSED) {
+                downloadManager.resume(mStatus.id);
+            }
+            // 下载状态，暂停下载
+            else if (mStatus.status == DownloadManager.STATUS_RUNNING) {
+                downloadManager.pause(mStatus.id);
+            }
+            // 其他状态，停止下载
             else {
                 downloadManager.remove(mStatus.id);
             }
@@ -206,7 +183,7 @@ public class AppListItemView extends ARecycleViewItemView<AppBean> implements Vi
         }
         // 暂停
         else if (status.status == DownloadManager.STATUS_PAUSED) {
-            mActionButton.setText("暂停");
+            mActionButton.setText("继续");
         }
         // 等待
         else if (status.status == DownloadManager.STATUS_PENDING ||

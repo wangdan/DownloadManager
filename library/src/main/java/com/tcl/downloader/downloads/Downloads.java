@@ -489,12 +489,12 @@ public final class Downloads {
         /**
          * This download is allowed to run.
          */
-        public static final int CONTROL_RUN = 0;
+        public static final int CONTROL_RUN = 1;
 
         /**
          * This download must pause at the first opportunity.
          */
-        public static final int CONTROL_PAUSED = 1;
+        public static final int CONTROL_PAUSED = 2;
 
         /**
          * 是否是下载暂停暂停状态
@@ -505,9 +505,9 @@ public final class Downloads {
         public static boolean isStatusPaused(int status) {
             switch (status) {
             case STATUS_PAUSED_BY_APP:
-            case Downloads.Impl.STATUS_WAITING_TO_RETRY:
-            case Downloads.Impl.STATUS_WAITING_FOR_NETWORK:
-            case Downloads.Impl.STATUS_QUEUED_FOR_WIFI:
+            case STATUS_WAITING_TO_RETRY:
+            case STATUS_WAITING_FOR_NETWORK:
+            case STATUS_QUEUED_FOR_WIFI:
                 return true;
             default:
                 return false;
