@@ -4,8 +4,8 @@ buildscript {
     repositories {
         jcenter()
         maven {
-            url "https://raw.githubusercontent.com/wangdan/mvn-repo-aiwen/master/repository/"
-//            url "/Users/wangdan/Documents/github/mvn-repo-aiwen/repository/"
+//            url "https://raw.githubusercontent.com/wangdan/mvn-repo-aiwen/master/repository/"
+            url "/Users/wangdan/Documents/github/mvn-repo-aiwen/repository/"
         }
     }
     dependencies {
@@ -20,8 +20,8 @@ allprojects {
     repositories {
         jcenter()
         maven {
-            url "https://raw.githubusercontent.com/wangdan/mvn-repo-aiwen/master/repository/"
-//            url "/Users/wangdan/Documents/github/mvn-repo-aiwen/repository/"
+//            url "https://raw.githubusercontent.com/wangdan/mvn-repo-aiwen/master/repository/"
+            url "/Users/wangdan/Documents/github/mvn-repo-aiwen/repository/"
         }
     }
 }

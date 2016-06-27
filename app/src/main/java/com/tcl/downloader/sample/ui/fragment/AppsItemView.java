@@ -113,8 +113,8 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
 
                 Uri uri = Uri.parse(app.getApk_url());
                 DownloadManager.Request request = new DownloadManager.Request(uri);
-                request.setVisibleInDownloadsUi(true);// 文件可以被系统的Downloads应用扫描到并管理
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+//                request.setVisibleInDownloadsUi(true);// 文件可以被系统的Downloads应用扫描到并管理
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_ONLY_COMPLETION);
                 request.setTitle(app.getName());
                 request.setDestinationUri(Uri.fromFile(new File(getContext().getExternalFilesDir("apk") + "/" + app.getName() +  ".apk")));
                 final long reference = downloadManager.enqueue(request);
