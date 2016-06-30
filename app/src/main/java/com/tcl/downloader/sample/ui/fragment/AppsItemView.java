@@ -11,12 +11,6 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.tcl.downloader.DLogger;
-import com.tcl.downloader.DownloadController;
-import com.tcl.downloader.DownloadManager;
-import com.tcl.downloader.IDownloadObserver;
-import com.tcl.downloader.IDownloadSubject;
-import com.tcl.downloader.downloads.Downloads;
 import com.tcl.downloader.sample.R;
 import com.tcl.downloader.sample.support.sdk.bean.AppBean;
 import com.tcl.downloader.sample.support.utis.Utils;
@@ -27,6 +21,12 @@ import org.aisen.android.component.bitmaploader.BitmapLoader;
 import org.aisen.android.component.bitmaploader.core.ImageConfig;
 import org.aisen.android.support.inject.ViewInject;
 import org.aisen.android.ui.fragment.adapter.ARecycleViewItemView;
+import org.aisen.downloader.DLogger;
+import org.aisen.downloader.DownloadController;
+import org.aisen.downloader.DownloadManager;
+import org.aisen.downloader.IDownloadObserver;
+import org.aisen.downloader.IDownloadSubject;
+import org.aisen.downloader.downloads.Downloads;
 
 import java.io.File;
 
@@ -114,7 +114,7 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
                 Uri uri = Uri.parse(app.getApk_url());
                 DownloadManager.Request request = new DownloadManager.Request(uri);
 //                request.setVisibleInDownloadsUi(true);// 文件可以被系统的Downloads应用扫描到并管理
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_ONLY_COMPLETION);
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
                 request.setTitle(app.getName());
                 request.setDestinationUri(Uri.fromFile(new File(getContext().getExternalFilesDir("apk") + "/" + app.getName() +  ".apk")));
                 final long reference = downloadManager.enqueue(request);

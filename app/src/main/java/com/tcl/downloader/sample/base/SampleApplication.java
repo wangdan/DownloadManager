@@ -1,10 +1,9 @@
 package com.tcl.downloader.sample.base;
 
-import com.tcl.downloader.DownloadManager;
-
 import org.aisen.android.common.context.GlobalContext;
 import org.aisen.android.common.utils.Logger;
 import org.aisen.android.component.bitmaploader.BitmapLoader;
+import org.aisen.downloader.DownloadManager;
 
 /**
  * Created by wangdan on 16/5/7.

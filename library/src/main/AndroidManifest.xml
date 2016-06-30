@@ -1,4 +1,4 @@
-<manifest package="com.tcl.downloader"
+<manifest package="org.aisen.downloader"
           xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
@@ -14,8 +14,8 @@
 
     <application android:allowBackup="true"
                  android:supportsRtl="true">
-        <provider android:name=".provider.DownloadProvider"
-                  android:authorities="tcldownloads" android:exported="true">
+        <provider android:name="org.aisen.downloader.provider.DownloadProvider"
+                  android:authorities="aisendownloads" android:exported="true">
             <!-- Anyone can access /my_downloads, the provider internally restricts access by UID for
                  these URIs -->
             <path-permission android:pathPrefix="/my_downloads"
@@ -35,8 +35,8 @@
         </provider>
 
         <provider
-            android:name=".provider.DownloadStorageProvider"
-            android:authorities="tcl.com.android.providers.downloads.documents"
+            android:name="org.aisen.downloader.provider.DownloadStorageProvider"
+            android:authorities="aisen.com.android.providers.downloads.documents"
             android:exported="true"
             android:grantUriPermissions="true"
             android:permission="android.permission.MANAGE_DOCUMENTS">
@@ -46,16 +46,16 @@
         </provider>
 
         <service
-            android:name=".provider.DownloadService"
+            android:name="org.aisen.downloader.provider.DownloadService"
             android:permission="android.permission.ACCESS_DOWNLOAD_MANAGER"/>
 
         <service
-            android:name=".provider.DownloadIdleService"
+            android:name="org.aisen.downloader.provider.DownloadIdleService"
             android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE">
         </service>
 
-        <receiver android:name=".provider.DownloadReceiver" android:exported="true">
+        <receiver android:name="org.aisen.downloader.provider.DownloadReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>

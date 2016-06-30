@@ -6,8 +6,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.tcl.downloader.DownloadController;
-import com.tcl.downloader.DownloadProxy;
+import org.aisen.downloader.DownloadController;
+import org.aisen.downloader.DownloadProxy;
 import com.tcl.downloader.sample.R;
 import com.tcl.downloader.sample.support.sdk.SDK;
 import com.tcl.downloader.sample.support.sdk.bean.AppBean;

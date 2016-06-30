@@ -6,12 +6,12 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 
-import com.tcl.downloader.DLogger;
-import com.tcl.downloader.DownloadManager;
 import com.tcl.downloader.sample.R;
 import com.tcl.downloader.sample.ui.fragment.TabsFragment;
 
 import org.aisen.android.ui.activity.basic.BaseActivity;
+import org.aisen.downloader.DLogger;
+import org.aisen.downloader.DownloadManager;
 
 import java.io.File;
 
