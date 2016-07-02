@@ -32,24 +32,4 @@ public class Utils {
         }
     }
 
-    public static boolean compareStatus(DownloadController.DownloadStatus oldStatus, DownloadController.DownloadStatus newStatus) {
-        if (oldStatus == null) {
-            return true;
-        }
-        else if (newStatus == null) {
-            return true;
-        }
-        else if (oldStatus.status != newStatus.status) {
-            return true;
-        }
-        else if (oldStatus.progress != newStatus.progress) {
-            return true;
-        }
-        else if (oldStatus.deleted != newStatus.deleted) {
-            return true;
-        }
-
-        return false;
-    }
-
 }

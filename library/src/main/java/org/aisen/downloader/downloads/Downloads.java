@@ -734,7 +734,7 @@ public final class Downloads {
 
         /**
          * This download has failed because requesting application has been
-         * blocked by {@link NetworkPolicyManager}.
+         * blocked by {NetworkPolicyManager}.
          *
          * @hide
          * @deprecated since behavior now uses
@@ -776,6 +776,8 @@ public final class Downloads {
 
         public static int translateStatus(int status) {
             switch (status) {
+                case -1:
+                    return -1;
                 case Downloads.Impl.STATUS_PENDING:
                     return org.aisen.downloader.DownloadManager.STATUS_PENDING;
 

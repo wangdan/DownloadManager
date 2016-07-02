@@ -779,19 +779,20 @@ public final class DownloadProvider extends ContentProvider {
                 Downloads.Impl.DESTINATION_FILE_URI,
                 Downloads.Impl.DESTINATION_NON_DOWNLOADMANAGER_DOWNLOAD);
 
-        if (getContext().checkCallingOrSelfPermission(Downloads.Impl.PERMISSION_NO_NOTIFICATION)
-                == PackageManager.PERMISSION_GRANTED) {
+        // 2016-07-02 允许背景下载
+//        if (getContext().checkCallingOrSelfPermission(Downloads.Impl.PERMISSION_NO_NOTIFICATION)
+//                == PackageManager.PERMISSION_GRANTED) {
             enforceAllowedValues(values, Downloads.Impl.COLUMN_VISIBILITY,
                     DownloadManager.Request.VISIBILITY_HIDDEN,
                     DownloadManager.Request.VISIBILITY_VISIBLE,
                     DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED,
                     DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_ONLY_COMPLETION);
-        } else {
-            enforceAllowedValues(values, Downloads.Impl.COLUMN_VISIBILITY,
-                    DownloadManager.Request.VISIBILITY_VISIBLE,
-                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED,
-                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_ONLY_COMPLETION);
-        }
+//        } else {
+//            enforceAllowedValues(values, Downloads.Impl.COLUMN_VISIBILITY,
+//                    DownloadManager.Request.VISIBILITY_VISIBLE,
+//                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED,
+//                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_ONLY_COMPLETION);
+//        }
 
         // remove the rest of the columns that are allowed (with any value)
         values.remove(Downloads.Impl.COLUMN_URI);

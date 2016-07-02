@@ -334,6 +334,7 @@ public class DownloadService extends Service {
             }
             while (cursor.moveToNext()) {
                 final long id = cursor.getLong(idColumn);
+                staleIds.remove(id);
 
                 DownloadInfo info = mDownloads.get(id);
                 if (info != null) {
@@ -347,24 +348,20 @@ public class DownloadService extends Service {
                 }
 
                 String localUri = cursor.getString(cursor.getColumnIndexOrThrow(Downloads.Impl._DATA));
-                if (!TextUtils.isEmpty(localUri)) {
-                    // 文件不存在，就清理掉
-                    File file = new File(localUri);
-                    if (file.exists()) {
-                        staleIds.remove(id);
-                    }
-                    else {
-                        DownloadController.refreshDownloadDeleted(info);
-
-                        DLogger.w(TAG, "remove id[%s], name[%s], localUri[%s]", id + "", info.mTitle, info.mFileName);
-                    }
+                // 下载异常，且临时文件被删掉了
+                if (TextUtils.isEmpty(localUri) && Downloads.Impl.isStatusError(info.mStatus)) {
+                    info.mDeleted = true;
                 }
-                else {
-                    staleIds.remove(id);
+                // 如果文件被删除
+                else if (!TextUtils.isEmpty(localUri) && !new File(localUri).exists()) {
+                    info.mDeleted = true;
                 }
 
                 if (info.mDeleted) {
+                    DLogger.w(TAG, "remove id[%s], name[%s], localUri[%s]", id + "", info.mTitle, info.mFileName);
+
                     staleIds.add(id);
+                    info.mStatus = -1;
 
                     DownloadController.refreshDownloadInfo(info);
 

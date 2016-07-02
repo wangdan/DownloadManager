@@ -84,6 +84,8 @@ public class DownloadInfo {
             info.mDestination = getInt(Downloads.Impl.COLUMN_DESTINATION);
             info.mVisibility = getInt(Downloads.Impl.COLUMN_VISIBILITY);
             info.mStatus = getInt(Downloads.Impl.COLUMN_STATUS);
+            // 新增错误原因
+            info.mErrorMsg = getString(Impl.COLUMN_ERROR_MSG);
             info.mNumFailed = getInt(Downloads.Impl.COLUMN_FAILED_CONNECTIONS);
             int retryRedirect = getInt(Constants.RETRY_AFTER_X_REDIRECT_COUNT);
             info.mRetryAfter = retryRedirect & 0xfffffff;
@@ -245,6 +247,8 @@ public class DownloadInfo {
     public int mBypassRecommendedSizeLimit;
 
     public int mFuzz;
+
+    public String mErrorMsg;// 错误原因
 
     private List<Pair<String, String>> mRequestHeaders = new ArrayList<Pair<String, String>>();
 

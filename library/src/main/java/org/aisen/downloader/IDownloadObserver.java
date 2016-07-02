@@ -11,6 +11,4 @@ public interface IDownloadObserver {
 
     void onDownloadChanged(DownloadController.DownloadStatus status);
 
-    boolean statusChanged(DownloadController.DownloadStatus newStatus);
-
 }

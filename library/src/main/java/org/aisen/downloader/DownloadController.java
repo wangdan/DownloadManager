@@ -172,6 +172,7 @@ public final class DownloadController {
             status.localUri = downloadInfo.mFileName;
             status.deleted = downloadInfo.mDeleted;
             status.paused = downloadInfo.mControl;
+            status.reason = downloadInfo.mErrorMsg;
         }
 
         notifyDownloadStatus(uri, status);
