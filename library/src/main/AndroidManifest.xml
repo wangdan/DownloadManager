@@ -15,7 +15,7 @@
     <application android:allowBackup="true"
                  android:supportsRtl="true">
         <provider android:name="org.aisen.downloader.provider.DownloadProvider"
-                  android:authorities="aisendownloads" android:exported="true">
+                  android:authorities="org.aisen.android.downloader.provider" android:exported="true">
             <!-- Anyone can access /my_downloads, the provider internally restricts access by UID for
                  these URIs -->
             <path-permission android:pathPrefix="/my_downloads"

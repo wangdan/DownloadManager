@@ -45,11 +45,13 @@ public class DownloadProxy implements IDownloadSubject {
 
         for (IDownloadObserver observer : observers) {
             if (!TextUtils.isEmpty(observer.downloadURI()) && observer.downloadURI().equals(uri)) {
-                if (status == null || status.status == -1 || status.deleted) {
-                    observer.onDownloadInit();
-                }
-                else {
-                    observer.onDownloadChanged(status);
+                if (observer.statusChanged(status)) {
+                    if (status == null || status.status == -1 || status.deleted) {
+                        observer.onDownloadInit();
+                    }
+                    else {
+                        observer.onDownloadChanged(status);
+                    }
                 }
             }
         }

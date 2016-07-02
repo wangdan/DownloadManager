@@ -1,5 +1,7 @@
 package org.aisen.downloader.utils;
 
+import org.aisen.downloader.DownloadController;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -28,6 +30,26 @@ public class Utils {
         } catch (NoSuchAlgorithmException var6) {
             return String.valueOf(key.hashCode());
         }
+    }
+
+    public static boolean compareStatus(DownloadController.DownloadStatus oldStatus, DownloadController.DownloadStatus newStatus) {
+        if (oldStatus == null) {
+            return true;
+        }
+        else if (newStatus == null) {
+            return true;
+        }
+        else if (oldStatus.status != newStatus.status) {
+            return true;
+        }
+        else if (oldStatus.progress != newStatus.progress) {
+            return true;
+        }
+        else if (oldStatus.deleted != newStatus.deleted) {
+            return true;
+        }
+
+        return false;
     }
 
 }
