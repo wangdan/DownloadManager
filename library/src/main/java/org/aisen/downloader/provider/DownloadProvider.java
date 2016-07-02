@@ -52,6 +52,7 @@ import org.aisen.downloader.downloads.Downloads;
 
 import org.aisen.downloader.utils.IndentingPrintWriter;
 import org.aisen.downloader.utils.IoUtils;
+import org.aisen.downloader.utils.Utils;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -70,6 +71,9 @@ import java.util.Map;
  * Allows application to interact with the download manager.
  */
 public final class DownloadProvider extends ContentProvider {
+
+    public static String AUTHORITIES = null;// "aisendownloads";
+
     /** Database filename */
     private static final String DB_NAME = "downloads.db";
     /** Current database version */
@@ -99,33 +103,13 @@ public final class DownloadProvider extends ContentProvider {
      * is publicly accessible.
      */
     private static final int PUBLIC_DOWNLOAD_ID = 6;
-    static {
-        sURIMatcher.addURI("aisendownloads", "my_downloads", MY_DOWNLOADS);
-        sURIMatcher.addURI("aisendownloads", "my_downloads/#", MY_DOWNLOADS_ID);
-        sURIMatcher.addURI("aisendownloads", "all_downloads", ALL_DOWNLOADS);
-        sURIMatcher.addURI("aisendownloads", "all_downloads/#", ALL_DOWNLOADS_ID);
-        sURIMatcher.addURI("aisendownloads",
-                "my_downloads/#/" + Downloads.Impl.RequestHeaders.URI_SEGMENT,
-                REQUEST_HEADERS_URI);
-        sURIMatcher.addURI("aisendownloads",
-                "all_downloads/#/" + Downloads.Impl.RequestHeaders.URI_SEGMENT,
-                REQUEST_HEADERS_URI);
-        // temporary, for backwards compatibility
-        sURIMatcher.addURI("aisendownloads", "download", MY_DOWNLOADS);
-        sURIMatcher.addURI("aisendownloads", "download/#", MY_DOWNLOADS_ID);
-        sURIMatcher.addURI("aisendownloads",
-                "download/#/" + Downloads.Impl.RequestHeaders.URI_SEGMENT,
-                REQUEST_HEADERS_URI);
-        sURIMatcher.addURI("aisendownloads",
-                Downloads.Impl.PUBLICLY_ACCESSIBLE_DOWNLOADS_URI_SEGMENT + "/#",
-                PUBLIC_DOWNLOAD_ID);
-    }
 
     /** Different base URIs that could be used to access an individual download */
-    private static final Uri[] BASE_URIS = new Uri[] {
-            Downloads.Impl.CONTENT_URI,
-            Downloads.Impl.ALL_DOWNLOADS_CONTENT_URI,
-    };
+//    private static Uri[] BASE_URIS;
+//            = new Uri[] {
+//            Downloads.Impl.CONTENT_URI,
+//            Downloads.Impl.ALL_DOWNLOADS_CONTENT_URI,
+//    };
 
     private static final String[] sAppReadableColumnsArray = new String[] {
         Downloads.Impl._ID,
@@ -433,11 +417,45 @@ public final class DownloadProvider extends ContentProvider {
         }
     }
 
+    public static void setup(Context context) {
+        synchronized (sURIMatcher) {
+            if (TextUtils.isEmpty(AUTHORITIES)) {
+                AUTHORITIES = Utils.getMetaDataValue(context, "AISEN_PROVIDER");
+
+                sURIMatcher.addURI(AUTHORITIES, "my_downloads", MY_DOWNLOADS);
+                sURIMatcher.addURI(AUTHORITIES, "my_downloads/#", MY_DOWNLOADS_ID);
+                sURIMatcher.addURI(AUTHORITIES, "all_downloads", ALL_DOWNLOADS);
+                sURIMatcher.addURI(AUTHORITIES, "all_downloads/#", ALL_DOWNLOADS_ID);
+                sURIMatcher.addURI(AUTHORITIES,
+                        "my_downloads/#/" + Downloads.Impl.RequestHeaders.URI_SEGMENT,
+                        REQUEST_HEADERS_URI);
+                sURIMatcher.addURI(AUTHORITIES,
+                        "all_downloads/#/" + Downloads.Impl.RequestHeaders.URI_SEGMENT,
+                        REQUEST_HEADERS_URI);
+                // temporary, for backwards compatibility
+                sURIMatcher.addURI(AUTHORITIES, "download", MY_DOWNLOADS);
+                sURIMatcher.addURI(AUTHORITIES, "download/#", MY_DOWNLOADS_ID);
+                sURIMatcher.addURI(AUTHORITIES,
+                        "download/#/" + Downloads.Impl.RequestHeaders.URI_SEGMENT,
+                        REQUEST_HEADERS_URI);
+                sURIMatcher.addURI(AUTHORITIES,
+                        Downloads.Impl.PUBLICLY_ACCESSIBLE_DOWNLOADS_URI_SEGMENT + "/#",
+                        PUBLIC_DOWNLOAD_ID);
+
+                Downloads.Impl.CONTENT_URI = Uri.parse("content://" + AUTHORITIES + "/my_downloads");
+                Downloads.Impl.ALL_DOWNLOADS_CONTENT_URI = Uri.parse("content://" + AUTHORITIES + "/all_downloads");
+                Downloads.Impl.PUBLICLY_ACCESSIBLE_DOWNLOADS_URI = Uri.parse("content://" + AUTHORITIES + "/" + Downloads.Impl.PUBLICLY_ACCESSIBLE_DOWNLOADS_URI_SEGMENT);
+            }
+        }
+    }
+
     /**
      * Initializes the content provider when it is created.
      */
     @Override
     public boolean onCreate() {
+        setup(getContext());
+
         if (mSystemFacade == null) {
             mSystemFacade = new RealSystemFacade(getContext());
         }
@@ -1146,7 +1164,7 @@ public final class DownloadProvider extends ContentProvider {
         if (uriMatch == MY_DOWNLOADS_ID || uriMatch == ALL_DOWNLOADS_ID) {
             downloadId = Long.parseLong(getDownloadIdFromUri(uri));
         }
-        for (Uri uriToNotify : BASE_URIS) {
+        for (Uri uriToNotify : new Uri[] { Downloads.Impl.CONTENT_URI, Downloads.Impl.ALL_DOWNLOADS_CONTENT_URI }) {
             if (downloadId != null) {
                 uriToNotify = ContentUris.withAppendedId(uriToNotify, downloadId);
             }
@@ -1408,4 +1426,5 @@ public final class DownloadProvider extends ContentProvider {
             to.put(key, defaultValue);
         }
     }
+
 }

@@ -86,15 +86,13 @@ public final class Downloads {
         /**
          * The content:// URI to access downloads owned by the caller's UID.
          */
-        public static final Uri CONTENT_URI =
-                Uri.parse("content://aisendownloads/my_downloads");
+        public static Uri CONTENT_URI = null;// Uri.parse("content://" + DownloadProvider.AUTHORITIES + "/my_downloads");
 
         /**
          * The content URI for accessing all downloads across all UIDs (requires the
          * ACCESS_ALL_DOWNLOADS permission).
          */
-        public static final Uri ALL_DOWNLOADS_CONTENT_URI =
-                Uri.parse("content://aisendownloads/all_downloads");
+        public static  Uri ALL_DOWNLOADS_CONTENT_URI = null;// Uri.parse("content://" + DownloadProvider.AUTHORITIES + "/all_downloads");
 
         /** URI segment to access a publicly accessible downloaded file */
         public static final String PUBLICLY_ACCESSIBLE_DOWNLOADS_URI_SEGMENT = "public_downloads";
@@ -103,8 +101,7 @@ public final class Downloads {
          * The content URI for accessing publicly accessible downloads (i.e., it requires no
          * permissions to access this downloaded file)
          */
-        public static final Uri PUBLICLY_ACCESSIBLE_DOWNLOADS_URI =
-                Uri.parse("content://aisendownloads/" + PUBLICLY_ACCESSIBLE_DOWNLOADS_URI_SEGMENT);
+        public static Uri PUBLICLY_ACCESSIBLE_DOWNLOADS_URI = null;// Uri.parse("content://" + DownloadProvider.AUTHORITIES + "/" + PUBLICLY_ACCESSIBLE_DOWNLOADS_URI_SEGMENT);
 
         /**
          * Broadcast Action: this is sent by the download manager to the app

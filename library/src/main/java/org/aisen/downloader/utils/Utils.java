@@ -1,6 +1,8 @@
 package org.aisen.downloader.utils;
 
-import org.aisen.downloader.DownloadController;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,6 +32,20 @@ public class Utils {
         } catch (NoSuchAlgorithmException var6) {
             return String.valueOf(key.hashCode());
         }
+    }
+
+    public static String getMetaDataValue(Context context, String name) {
+        PackageManager packageManager = context.getPackageManager();
+        try {
+            ApplicationInfo applicationInfo = packageManager.getApplicationInfo(context.getPackageName(), PackageManager.GET_META_DATA);
+            if (applicationInfo != null && applicationInfo.metaData != null) {
+                return applicationInfo.metaData.get(name).toString();
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        throw new RuntimeException("请配置MATE_DATA[" + name + "]");
     }
 
 }

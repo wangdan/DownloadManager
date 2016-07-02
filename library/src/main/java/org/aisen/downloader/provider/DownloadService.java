@@ -176,6 +176,8 @@ public class DownloadService extends Service {
     public void onCreate() {
         super.onCreate();
 
+        DownloadProvider.setup(this);
+
         mExecutor = buildDownloadExecutor(this);
 
         DLogger.v(TAG, "Service onCreate");
