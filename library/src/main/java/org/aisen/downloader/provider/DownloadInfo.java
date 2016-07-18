@@ -36,6 +36,7 @@ import org.aisen.downloader.downloads.Downloads;
 import org.aisen.downloader.downloads.Downloads.Impl;
 import org.aisen.downloader.utils.ConnectivityManagerUtils;
 import org.aisen.downloader.utils.IndentingPrintWriter;
+import org.aisen.downloader.utils.Utils;
 
 import java.io.CharArrayWriter;
 import java.io.File;
@@ -80,7 +81,7 @@ public class DownloadInfo {
             info.mNoIntegrity = getInt(Downloads.Impl.COLUMN_NO_INTEGRITY) == 1;
             info.mHint = getString(Downloads.Impl.COLUMN_FILE_NAME_HINT);
             info.mFileName = getString(Downloads.Impl._DATA);
-            info.mMimeType = Intent.normalizeMimeType(getString(Downloads.Impl.COLUMN_MIME_TYPE));
+            info.mMimeType = Utils.normalizeMimeType(getString(Downloads.Impl.COLUMN_MIME_TYPE));
             info.mDestination = getInt(Downloads.Impl.COLUMN_DESTINATION);
             info.mVisibility = getInt(Downloads.Impl.COLUMN_VISIBILITY);
             info.mStatus = getInt(Downloads.Impl.COLUMN_STATUS);

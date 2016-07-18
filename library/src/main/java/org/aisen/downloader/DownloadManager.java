@@ -26,9 +26,6 @@ import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
-import android.provider.Settings;
-import android.provider.Settings.SettingNotFoundException;
-import android.text.TextUtils;
 import android.util.Pair;
 
 import org.aisen.downloader.downloads.Downloads;
@@ -1189,116 +1186,6 @@ public class DownloadManager {
         values.put(Downloads.Impl.COLUMN_STATUS, Downloads.Impl.STATUS_PENDING);
         values.put(Downloads.Impl.COLUMN_FAILED_CONNECTIONS, 0);
         mResolver.update(mBaseUri, values, getWhereClauseForIds(ids), getWhereArgsForIds(ids));
-    }
-
-    /**
-     * Returns maximum size, in bytes, of downloads that may go over a mobile connection; or null if
-     * there's no limit
-     *
-     * @param context the {@link Context} to use for accessing the {@link ContentResolver}
-     * @return maximum size, in bytes, of downloads that may go over a mobile connection; or null if
-     * there's no limit
-     */
-    public static Long getMaxBytesOverMobile(Context context) {
-        try {
-            return Settings.Global.getLong(context.getContentResolver(),
-                    "download_manager_max_bytes_over_mobile");
-        } catch (SettingNotFoundException exc) {
-            return null;
-        }
-    }
-
-    /**
-     * Returns recommended maximum size, in bytes, of downloads that may go over a mobile
-     * connection; or null if there's no recommended limit.  The user will have the option to bypass
-     * this limit.
-     *
-     * @param context the {@link Context} to use for accessing the {@link ContentResolver}
-     * @return recommended maximum size, in bytes, of downloads that may go over a mobile
-     * connection; or null if there's no recommended limit.
-     */
-    public static Long getRecommendedMaxBytesOverMobile(Context context) {
-        try {
-            return Settings.Global.getLong(context.getContentResolver(),
-                    "download_manager_recommended_max_bytes_over_mobile");
-        } catch (SettingNotFoundException exc) {
-            return null;
-        }
-    }
-
-    /**
-     * Adds a file to the downloads database system, so it could appear in Downloads App
-     * (and thus become eligible for management by the Downloads App).
-     * <p>
-     * It is helpful to make the file scannable by MediaScanner by setting the param
-     * isMediaScannerScannable to true. It makes the file visible in media managing
-     * applications such as Gallery App, which could be a useful purpose of using this API.
-     *
-     * @param title the title that would appear for this file in Downloads App.
-     * @param description the description that would appear for this file in Downloads App.
-     * @param isMediaScannerScannable true if the file is to be scanned by MediaScanner. Files
-     * scanned by MediaScanner appear in the applications used to view media (for example,
-     * Gallery app).
-     * @param mimeType mimetype of the file.
-     * @param path absolute pathname to the file. The file should be world-readable, so that it can
-     * be managed by the Downloads App and any other app that is used to read it (for example,
-     * Gallery app to display the file, if the file contents represent a video/image).
-     * @param length length of the downloaded file
-     * @param showNotification true if a notification is to be sent, false otherwise
-     * @return  an ID for the download entry added to the downloads app, unique across the system
-     * This ID is used to make future calls related to this download.
-     */
-    public long addCompletedDownload(String title, String description,
-            boolean isMediaScannerScannable, String mimeType, String path, long length,
-            boolean showNotification) {
-        return addCompletedDownload(title, description, isMediaScannerScannable, mimeType, path,
-                length, showNotification, false);
-    }
-
-    /** {@hide} */
-    public long addCompletedDownload(String title, String description,
-            boolean isMediaScannerScannable, String mimeType, String path, long length,
-            boolean showNotification, boolean allowWrite) {
-        // make sure the input args are non-null/non-zero
-        validateArgumentIsNonEmpty("title", title);
-        validateArgumentIsNonEmpty("description", description);
-        validateArgumentIsNonEmpty("path", path);
-        validateArgumentIsNonEmpty("mimeType", mimeType);
-        if (length < 0) {
-            throw new IllegalArgumentException(" invalid value for param: totalBytes");
-        }
-
-        // if there is already an entry with the given path name in downloads.db, return its id
-        Request request = new Request(NON_DOWNLOADMANAGER_DOWNLOAD)
-                .setTitle(title)
-                .setDescription(description)
-                .setMimeType(mimeType);
-        ContentValues values = request.toContentValues(null);
-        values.put(Downloads.Impl.COLUMN_DESTINATION,
-                Downloads.Impl.DESTINATION_NON_DOWNLOADMANAGER_DOWNLOAD);
-        values.put(Downloads.Impl._DATA, path);
-        values.put(Downloads.Impl.COLUMN_STATUS, Downloads.Impl.STATUS_SUCCESS);
-        values.put(Downloads.Impl.COLUMN_TOTAL_BYTES, length);
-        values.put(Downloads.Impl.COLUMN_MEDIA_SCANNED,
-                (isMediaScannerScannable) ? Request.SCANNABLE_VALUE_YES :
-                        Request.SCANNABLE_VALUE_NO);
-        values.put(Downloads.Impl.COLUMN_VISIBILITY, (showNotification) ?
-                Request.VISIBILITY_VISIBLE_NOTIFY_ONLY_COMPLETION : Request.VISIBILITY_HIDDEN);
-        values.put(Downloads.Impl.COLUMN_ALLOW_WRITE, allowWrite ? 1 : 0);
-        Uri downloadUri = mResolver.insert(Downloads.Impl.CONTENT_URI, values);
-        if (downloadUri == null) {
-            return -1;
-        }
-        return Long.parseLong(downloadUri.getLastPathSegment());
-    }
-
-    private static final String NON_DOWNLOADMANAGER_DOWNLOAD =
-            "non-dwnldmngr-download-dont-retry2download";
-
-    private static void validateArgumentIsNonEmpty(String paramName, String val) {
-        if (TextUtils.isEmpty(val)) {
-            throw new IllegalArgumentException(paramName + " can't be null");
-        }
     }
 
     /**

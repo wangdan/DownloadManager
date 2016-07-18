@@ -18,8 +18,6 @@ package org.aisen.downloader.provider;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
-import android.drm.DrmManagerClient;
 import android.net.NetworkInfo;
 import android.net.TrafficStats;
 import android.net.Uri;
@@ -28,9 +26,6 @@ import android.os.PowerManager;
 import android.os.Process;
 import android.os.SystemClock;
 import android.os.WorkSource;
-import android.system.ErrnoException;
-import android.system.Os;
-import android.system.OsConstants;
 import android.util.Pair;
 
 import org.aisen.downloader.DLogger;
@@ -38,10 +33,10 @@ import org.aisen.downloader.downloads.Downloads;
 import org.aisen.downloader.provider.DownloadInfo.NetworkState;
 import org.aisen.downloader.utils.ConnectivityManagerUtils;
 import org.aisen.downloader.utils.IoUtils;
+import org.aisen.downloader.utils.Utils;
 
 import java.io.File;
 import java.io.FileDescriptor;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -52,6 +47,14 @@ import java.net.URL;
 import java.net.URLConnection;
 
 import static android.text.format.DateUtils.SECOND_IN_MILLIS;
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
+import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
+import static java.net.HttpURLConnection.HTTP_OK;
+import static java.net.HttpURLConnection.HTTP_PARTIAL;
+import static java.net.HttpURLConnection.HTTP_PRECON_FAILED;
+import static java.net.HttpURLConnection.HTTP_SEE_OTHER;
+import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static org.aisen.downloader.downloads.Downloads.Impl.STATUS_BAD_REQUEST;
 import static org.aisen.downloader.downloads.Downloads.Impl.STATUS_CANCELED;
 import static org.aisen.downloader.downloads.Downloads.Impl.STATUS_CANNOT_RESUME;
@@ -63,14 +66,6 @@ import static org.aisen.downloader.downloads.Downloads.Impl.STATUS_UNHANDLED_HTT
 import static org.aisen.downloader.downloads.Downloads.Impl.STATUS_UNKNOWN_ERROR;
 import static org.aisen.downloader.downloads.Downloads.Impl.STATUS_WAITING_FOR_NETWORK;
 import static org.aisen.downloader.downloads.Downloads.Impl.STATUS_WAITING_TO_RETRY;
-import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
-import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static java.net.HttpURLConnection.HTTP_PARTIAL;
-import static java.net.HttpURLConnection.HTTP_PRECON_FAILED;
-import static java.net.HttpURLConnection.HTTP_SEE_OTHER;
-import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
 /**
  * Task which executes a given {@link DownloadInfo}: making network requests,
@@ -474,7 +469,6 @@ public class DownloadThread implements Runnable {
                     STATUS_CANNOT_RESUME, "can't know size of download, giving up");
         }
 
-        DrmManagerClient drmClient = null;
         ParcelFileDescriptor outPfd = null;
         FileDescriptor outFd = null;
         InputStream in = null;
@@ -489,61 +483,17 @@ public class DownloadThread implements Runnable {
             try {
                 outPfd = mContext.getContentResolver()
                         .openFileDescriptor(mInfo.getAllDownloadsUri(), "rw");
+
                 outFd = outPfd.getFileDescriptor();
 
-//                if (DownloadDrmHelper.isDrmConvertNeeded(mInfoDelta.mMimeType)) {
-//                    drmClient = new DrmManagerClient(mContext);
-//                    out = new DrmOutputStream(drmClient, outPfd, mInfoDelta.mMimeType);
-//                } else {
-                    out = new ParcelFileDescriptor.AutoCloseOutputStream(outPfd);
-//                }
+                out = new ParcelFileDescriptor.AutoCloseOutputStream(outPfd);
 
-                // Pre-flight disk space requirements, when known
-                if (mInfoDelta.mTotalBytes > 0) {
-                    final long curSize = Os.fstat(outFd).st_size;
-                    final long newBytes = mInfoDelta.mTotalBytes - curSize;
-
-                    StorageUtils.ensureAvailableSpace(mContext, outFd, newBytes);
-
-                    try {
-                        // We found enough space, so claim it for ourselves
-                        Os.posix_fallocate(outFd, 0, mInfoDelta.mTotalBytes);
-                    } catch (ErrnoException e) {
-                        if (e.errno == OsConstants.ENOSYS || e.errno == OsConstants.ENOTSUP) {
-                            DLogger.w(TAG, "fallocate() not supported; falling back to ftruncate()");
-                            Os.ftruncate(outFd, mInfoDelta.mTotalBytes);
-                        } else {
-                            throw e;
-                        }
-                    }
-                }
-
-                // Move into place to begin writing
-                Os.lseek(outFd, mInfoDelta.mCurrentBytes, OsConstants.SEEK_SET);
-
-            } catch (ErrnoException e) {
-                throw new StopRequestException(STATUS_FILE_ERROR, e);
             } catch (IOException e) {
                 throw new StopRequestException(STATUS_FILE_ERROR, e);
             }
 
-            // Start streaming data, periodically watch for pause/cancel
-            // commands and checking disk space as needed.
             transferData(in, out, outFd);
-
-//            try {
-//                if (out instanceof DrmOutputStream) {
-//                    ((DrmOutputStream) out).finish();
-//                }
-//            } catch (IOException e) {
-//                throw new StopRequestException(STATUS_FILE_ERROR, e);
-//            }
-
         } finally {
-            if (drmClient != null) {
-                drmClient.release();
-            }
-
             IoUtils.closeQuietly(in);
 
             try {
@@ -579,14 +529,6 @@ public class DownloadThread implements Runnable {
             }
 
             try {
-                // When streaming, ensure space before each write
-                if (mInfoDelta.mTotalBytes == -1) {
-                    final long curSize = Os.fstat(outFd).st_size;
-                    final long newBytes = (mInfoDelta.mCurrentBytes + len) - curSize;
-
-                    StorageUtils.ensureAvailableSpace(mContext, outFd, newBytes);
-                }
-
                 out.write(buffer, 0, len);
 
                 mMadeProgress = true;
@@ -594,8 +536,6 @@ public class DownloadThread implements Runnable {
 
                 updateProgress(outFd);
 
-            } catch (ErrnoException e) {
-                throw new StopRequestException(STATUS_FILE_ERROR, e);
             } catch (IOException e) {
                 throw new StopRequestException(STATUS_FILE_ERROR, e);
             }
@@ -613,19 +553,6 @@ public class DownloadThread implements Runnable {
      */
     private void finalizeDestination() {
         if (Downloads.Impl.isStatusError(mInfoDelta.mStatus)) {
-            // When error, free up any disk space
-            try {
-                final ParcelFileDescriptor target = mContext.getContentResolver()
-                        .openFileDescriptor(mInfo.getAllDownloadsUri(), "rw");
-                try {
-                    Os.ftruncate(target.getFileDescriptor(), 0);
-                } catch (ErrnoException ignored) {
-                } finally {
-                    IoUtils.closeQuietly(target);
-                }
-            } catch (FileNotFoundException ignored) {
-            }
-
             // Delete if local file
             if (mInfoDelta.mFileName != null) {
                 new File(mInfoDelta.mFileName).delete();
@@ -635,12 +562,6 @@ public class DownloadThread implements Runnable {
         } else if (Downloads.Impl.isStatusSuccess(mInfoDelta.mStatus)) {
             // When success, open access if local file
             if (mInfoDelta.mFileName != null) {
-                try {
-                    // TODO: remove this once PackageInstaller works with content://
-                    Os.chmod(mInfoDelta.mFileName, 0644);
-                } catch (ErrnoException ignored) {
-                }
-
                 if (mInfo.mDestination != Downloads.Impl.DESTINATION_FILE_URI) {
                     try {
                         // Move into final resting place, if needed
@@ -766,7 +687,7 @@ public class DownloadThread implements Runnable {
         }
 
         if (mInfoDelta.mMimeType == null) {
-            mInfoDelta.mMimeType = Intent.normalizeMimeType(conn.getContentType());
+            mInfoDelta.mMimeType = Utils.normalizeMimeType(conn.getContentType());
         }
 
         final String transferEncoding = conn.getHeaderField("Transfer-Encoding");

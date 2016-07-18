@@ -24,6 +24,8 @@ import android.content.ContentUris;
 import android.database.Cursor;
 import android.os.Environment;
 import android.system.ErrnoException;
+import android.system.Os;
+import android.system.StructStat;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -37,6 +39,9 @@ import org.aisen.downloader.downloads.Downloads;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 
 import static org.aisen.downloader.provider.Constants.TAG;
 
@@ -131,7 +136,7 @@ public class DownloadIdleService extends JobService {
         final ContentResolver resolver = getContentResolver();
 
         // Collect known files from database
-        final HashSet<StorageUtils.ConcreteFile> fromDb = Sets.newHashSet();
+        final HashSet<ConcreteFile> fromDb = Sets.newHashSet();
         final Cursor cursor = resolver.query(Downloads.Impl.ALL_DOWNLOADS_CONTENT_URI,
                 OrphanQuery.PROJECTION, null, null, null);
         try {
@@ -141,8 +146,8 @@ public class DownloadIdleService extends JobService {
 
                 final File file = new File(path);
                 try {
-                    fromDb.add(new StorageUtils.ConcreteFile(file));
-                } catch (ErrnoException e) {
+                    fromDb.add(new ConcreteFile(file));
+                } catch (Exception e) {
                     // File probably no longer exists
                     final String state = Environment.getExternalStorageState(file);
                     if (Environment.MEDIA_UNKNOWN.equals(state)
@@ -164,20 +169,87 @@ public class DownloadIdleService extends JobService {
 
         // Collect known files from disk
         final int uid = android.os.Process.myUid();
-        final ArrayList<StorageUtils.ConcreteFile> fromDisk = Lists.newArrayList();
-        fromDisk.addAll(StorageUtils.listFilesRecursive(getCacheDir(), null, uid));
-        fromDisk.addAll(StorageUtils.listFilesRecursive(getFilesDir(), null, uid));
-        fromDisk.addAll(StorageUtils.listFilesRecursive(Environment.getDownloadCacheDirectory(), null, uid));
+        final ArrayList<ConcreteFile> fromDisk = Lists.newArrayList();
+        fromDisk.addAll(listFilesRecursive(getCacheDir(), null, uid));
+        fromDisk.addAll(listFilesRecursive(getFilesDir(), null, uid));
+        fromDisk.addAll(listFilesRecursive(Environment.getDownloadCacheDirectory(), null, uid));
 
         Log.d(TAG, "Found " + fromDb.size() + " files in database");
         Log.d(TAG, "Found " + fromDisk.size() + " files on disk");
 
         // Delete files no longer referenced by database
-        for (StorageUtils.ConcreteFile file : fromDisk) {
+        for (ConcreteFile file : fromDisk) {
             if (!fromDb.contains(file)) {
                 Log.d(TAG, "Missing db entry, deleting " + file.file);
                 file.file.delete();
             }
         }
     }
+
+    /**
+     * Return list of all normal files under the given directory, traversing
+     * directories recursively.
+     *
+     * @param exclude ignore dirs with this name, or {@code null} to ignore.
+     * @param uid only return files owned by this UID, or {@code -1} to ignore.
+     */
+    static List<ConcreteFile> listFilesRecursive(File startDir, String exclude, int uid) {
+        final ArrayList<ConcreteFile> files = Lists.newArrayList();
+        final LinkedList<File> dirs = new LinkedList<File>();
+        dirs.add(startDir);
+        while (!dirs.isEmpty()) {
+            final File dir = dirs.removeFirst();
+            if (Objects.equals(dir.getName(), exclude)) continue;
+
+            final File[] children = dir.listFiles();
+            if (children == null) continue;
+
+            for (File child : children) {
+                if (child.isDirectory()) {
+                    dirs.add(child);
+                } else if (child.isFile()) {
+                    try {
+                        final ConcreteFile file = new ConcreteFile(child);
+                        if (uid == -1 || file.stat.st_uid == uid) {
+                            files.add(file);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+        }
+        return files;
+    }
+
+    /**
+     * Concrete file on disk that has a backing device and inode. Faster than
+     * {@code realpath()} when looking for identical files.
+     */
+    static class ConcreteFile {
+        public final File file;
+        public final StructStat stat;
+
+        public ConcreteFile(File file) throws ErrnoException {
+            this.file = file;
+            this.stat = Os.lstat(file.getAbsolutePath());
+        }
+
+        @Override
+        public int hashCode() {
+            int result = 1;
+            result = 31 * result + (int) (stat.st_dev ^ (stat.st_dev >>> 32));
+            result = 31 * result + (int) (stat.st_ino ^ (stat.st_ino >>> 32));
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof ConcreteFile) {
+                final ConcreteFile f = (ConcreteFile) o;
+                return (f.stat.st_dev == stat.st_dev) && (f.stat.st_ino == stat.st_ino);
+            }
+            return false;
+        }
+    }
+
 }

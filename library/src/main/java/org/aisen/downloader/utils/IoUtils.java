@@ -16,6 +16,8 @@
 
 package org.aisen.downloader.utils;
 
+import android.database.Cursor;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.Socket;
@@ -26,7 +28,16 @@ public final class IoUtils {
         if (c != null) {
             try {
                 c.close();
-            } catch (IOException ignored) {
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    public static void closeQuietly(Cursor c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception ignored) {
             }
         }
     }

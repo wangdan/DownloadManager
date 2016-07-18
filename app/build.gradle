@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.tcl.downloader.sample"
-        minSdkVersion 21
+        minSdkVersion 19
         targetSdkVersion 23
         versionCode 100
         versionName "1.0.0"
@@ -25,23 +25,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-//    android.applicationVariants.all { variant ->
-//        variant.outputs.each { output ->
-//
-//            output.processManifest.doLast {
-//                def manifestFilePath = "${buildDir}/intermediates/manifests/full/${variant.dirName}/AndroidManifest.xml"
-//
-//                def menifestFile1 = new File(manifestFilePath)
-//                def updatedContent = menifestFile1.getText('UTF-8').
-//                        replaceAll("aisendownloads", 'aisendownloads-sample')
-//
-//                menifestFile1.write(updatedContent, 'UTF-8')
-//                def manifestFile = file(
-//                        "${buildDir}/intermediates/manifests/full/${variant.dirName}/AndroidManifest.xml")
-//                output.processResources.manifestFile = manifestFile
-//            }
-//        }
-//    }
 }
 
 dependencies {

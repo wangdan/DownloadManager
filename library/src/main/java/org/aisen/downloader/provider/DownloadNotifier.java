@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.SystemClock;
+import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 
@@ -151,7 +152,7 @@ public class DownloadNotifier {
             final int type = getNotificationTagType(tag);
             final Collection<DownloadInfo> cluster = clustered.get(tag);
 
-            final Notification.Builder builder = new Notification.Builder(mContext);
+            final NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext);
             builder.setColor(res.getColor(
                     R.color.system_notification_accent_color));
 
@@ -278,7 +279,7 @@ public class DownloadNotifier {
                 notif = builder.build();
 
             } else {
-                final Notification.InboxStyle inboxStyle = new Notification.InboxStyle(builder);
+                final NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle(builder);
 
                 for (DownloadInfo info : cluster) {
                     inboxStyle.addLine(getDownloadTitle(res, info));

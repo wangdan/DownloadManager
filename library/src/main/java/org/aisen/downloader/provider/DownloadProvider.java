@@ -1215,9 +1215,6 @@ public final class DownloadProvider extends ContentProvider {
                 }, selection.getSelection(), selection.getParameters(), null, null, null);
                 try {
                     while (cursor.moveToNext()) {
-                        final long id = cursor.getLong(0);
-                        DownloadStorageProvider.onDownloadProviderDelete(getContext(), id);
-
                         final String path = cursor.getString(1);
                         if (!TextUtils.isEmpty(path)) {
                             final File file = new File(path);

@@ -76,9 +76,6 @@ public class DownloadService extends Service {
 
     public static final String TAG = Constants.TAG + "_DownloadService";
 
-    // TODO: migrate WakeLock from individual DownloadThreads out into
-    // DownloadReceiver to protect our entire workflow.
-
     private static final boolean DEBUG_LIFECYCLE = false;
 
     @VisibleForTesting
