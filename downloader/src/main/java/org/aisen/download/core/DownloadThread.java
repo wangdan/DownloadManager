@@ -1,23 +1,19 @@
 package org.aisen.download.core;
 
+import android.content.ContentResolver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Process;
 import android.os.SystemClock;
 import android.text.TextUtils;
 
-import org.aisen.download.db.DBHelper;
-import org.aisen.download.db.DownloadInfo;
-import org.aisen.download.db.DownloadInfo.NetworkState;
-import org.aisen.download.downloads.Downloads;
+import org.aisen.download.core.DownloadInfo.NetworkState;
 import org.aisen.download.ui.DownloadNotifier;
 import org.aisen.download.utils.ConnectivityManagerUtils;
 import org.aisen.download.utils.Constants;
 import org.aisen.download.utils.DLogger;
 import org.aisen.download.utils.IoUtils;
-import org.aisen.download.utils.Utils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -39,17 +35,17 @@ import static java.net.HttpURLConnection.HTTP_PARTIAL;
 import static java.net.HttpURLConnection.HTTP_PRECON_FAILED;
 import static java.net.HttpURLConnection.HTTP_SEE_OTHER;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_BAD_REQUEST;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_CANCELED;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_CANNOT_RESUME;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_FILE_ERROR;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_HTTP_DATA_ERROR;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_SUCCESS;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_TOO_MANY_REDIRECTS;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_UNHANDLED_HTTP_CODE;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_UNKNOWN_ERROR;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_WAITING_FOR_NETWORK;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_WAITING_TO_RETRY;
+import static org.aisen.download.core.Downloads.Impl.STATUS_BAD_REQUEST;
+import static org.aisen.download.core.Downloads.Impl.STATUS_CANCELED;
+import static org.aisen.download.core.Downloads.Impl.STATUS_CANNOT_RESUME;
+import static org.aisen.download.core.Downloads.Impl.STATUS_FILE_ERROR;
+import static org.aisen.download.core.Downloads.Impl.STATUS_HTTP_DATA_ERROR;
+import static org.aisen.download.core.Downloads.Impl.STATUS_SUCCESS;
+import static org.aisen.download.core.Downloads.Impl.STATUS_TOO_MANY_REDIRECTS;
+import static org.aisen.download.core.Downloads.Impl.STATUS_UNHANDLED_HTTP_CODE;
+import static org.aisen.download.core.Downloads.Impl.STATUS_UNKNOWN_ERROR;
+import static org.aisen.download.core.Downloads.Impl.STATUS_WAITING_FOR_NETWORK;
+import static org.aisen.download.core.Downloads.Impl.STATUS_WAITING_TO_RETRY;
 
 /**
  * Created by wangdan on 16/7/30.
@@ -63,7 +59,6 @@ public class DownloadThread implements Runnable {
 
     private static final int DEFAULT_TIMEOUT = (int) (20 * SECOND_IN_MILLIS);
 
-    private final Context mContext;
     private DBHelper mDbHelper;
     private final SystemFacade mSystemFacade;
     private final DownloadNotifier mNotifier;
@@ -77,7 +72,6 @@ public class DownloadThread implements Runnable {
 
         values.put(Downloads.Impl.COLUMN_URI, mInfo.mUri);
         values.put(Downloads.Impl._DATA, mInfo.mFilePath);
-        values.put(Downloads.Impl.COLUMN_MIME_TYPE, mInfo.mMimeType);
         values.put(Downloads.Impl.COLUMN_STATUS, mInfo.mStatus);
         if (mInfo.mStatus == Downloads.Impl.STATUS_RUNNING) {
             values.put(Downloads.Impl.COLUMN_CONTROL, Downloads.Impl.CONTROL_RUN);
@@ -89,18 +83,14 @@ public class DownloadThread implements Runnable {
             values.put(Downloads.Impl.COLUMN_CONTROL, Downloads.Impl.CONTROL_NONE);
         }
         values.put(Downloads.Impl.COLUMN_FAILED_CONNECTIONS, mInfo.mNumFailed);
-        values.put(Constants.RETRY_AFTER_X_REDIRECT_COUNT, mInfo.mRetryAfter);
         values.put(Downloads.Impl.COLUMN_TOTAL_BYTES, mInfo.mTotalBytes);
         values.put(Downloads.Impl.COLUMN_CURRENT_BYTES, mInfo.mCurrentBytes);
+        values.put(Constants.ETAG, mInfo.mETag);
 
         values.put(Downloads.Impl.COLUMN_LAST_MODIFICATION, mSystemFacade.currentTimeMillis());
         values.put(Downloads.Impl.COLUMN_ERROR_MSG, mInfo.mErrorMsg);
 
         return values;
-    }
-
-    public void notifyDownloadInfo() {
-
     }
 
     /**
@@ -141,9 +131,8 @@ public class DownloadThread implements Runnable {
     /** Bytes transferred since current sample started. */
     private long mSpeedSampleBytes;
 
-    public DownloadThread(Context context, DBHelper dbHelper, SystemFacade systemFacade, DownloadNotifier notifier,
+    public DownloadThread(DBHelper dbHelper, SystemFacade systemFacade, DownloadNotifier notifier,
                           DownloadInfo info) {
-        mContext = context;
         mDbHelper = dbHelper;
         mSystemFacade = systemFacade;
         mNotifier = notifier;
@@ -311,7 +300,6 @@ public class DownloadThread implements Runnable {
                                 STATUS_CANNOT_RESUME, "Requested range not satisfiable");
 
                     case HTTP_UNAVAILABLE:
-                        parseUnavailableHeaders(conn);
                         throw new StopRequestException(
                                 HTTP_UNAVAILABLE, conn.getResponseMessage());
 
@@ -372,7 +360,7 @@ public class DownloadThread implements Runnable {
             try {
                 Uri fileUri = Uri.parse(mInfo.mFilePath + Constants.TEMP_SUFFIX);
 
-                if ("file".equals(fileUri.getScheme())) {
+                if (ContentResolver.SCHEME_FILE.equals(fileUri.getScheme())) {
                     // 先存临时文件
                     out = new FileOutputStream(fileUri.getPath());
                 }
@@ -540,22 +528,6 @@ public class DownloadThread implements Runnable {
      * filename, size, and ETag.
      */
     private void parseOkHeaders(HttpURLConnection conn) throws StopRequestException {
-//        if (TextUtils.isEmpty(mInfo.mFilePath)) {
-//            try {
-//                final String contentDisposition = conn.getHeaderField("Content-Disposition");
-//                final String contentLocation = conn.getHeaderField("Content-Location");
-
-//                mInfo.mFilePath = Helpers.generateSaveFile(mInfo.mFilePath);
-//            } catch (IOException e) {
-//                throw new StopRequestException(
-//                        Downloads.Impl.STATUS_FILE_ERROR, "Failed to generate filename: " + e);
-//            }
-//        }
-
-        if (mInfo.mMimeType == null) {
-            mInfo.mMimeType = Utils.normalizeMimeType(conn.getContentType());
-        }
-
         final String transferEncoding = conn.getHeaderField("Transfer-Encoding");
         if (transferEncoding == null) {
             mInfo.mTotalBytes = getHeaderFieldLong(conn, "Content-Length", -1);
@@ -569,22 +541,6 @@ public class DownloadThread implements Runnable {
 
         // Check connectivity again now that we know the total size
         checkConnectivity();
-    }
-
-    private void parseUnavailableHeaders(HttpURLConnection conn) {
-        long retryAfter = conn.getHeaderFieldInt("Retry-After", -1);
-        if (retryAfter < 0) {
-            retryAfter = 0;
-        } else {
-            if (retryAfter < Constants.MIN_RETRY_AFTER) {
-                retryAfter = Constants.MIN_RETRY_AFTER;
-            } else if (retryAfter > Constants.MAX_RETRY_AFTER) {
-                retryAfter = Constants.MAX_RETRY_AFTER;
-            }
-            retryAfter += Helpers.sRandom.nextInt(Constants.MIN_RETRY_AFTER + 1);
-        }
-
-        mInfo.mRetryAfter = (int) (retryAfter * SECOND_IN_MILLIS);
     }
 
     /**

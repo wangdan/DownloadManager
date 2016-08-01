@@ -13,8 +13,8 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
 import org.aisen.download.R;
-import org.aisen.download.db.DownloadInfo;
-import org.aisen.download.downloads.Downloads;
+import org.aisen.download.core.DownloadInfo;
+import org.aisen.download.core.Downloads;
 import org.aisen.download.utils.Constants;
 import org.aisen.download.utils.DLogger;
 import org.aisen.download.utils.LongSparseLongArray;
@@ -27,7 +27,7 @@ import java.util.Iterator;
 import static android.app.DownloadManager.Request.VISIBILITY_VISIBLE;
 import static android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED;
 import static android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_ONLY_COMPLETION;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_RUNNING;
+import static org.aisen.download.core.Downloads.Impl.STATUS_RUNNING;
 
 /**
  * Created by wangdan on 16/7/30.

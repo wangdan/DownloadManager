@@ -15,8 +15,8 @@
  */
 package org.aisen.download.core;
 
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_UNHANDLED_HTTP_CODE;
-import static org.aisen.download.downloads.Downloads.Impl.STATUS_UNHANDLED_REDIRECT;
+import static org.aisen.download.core.Downloads.Impl.STATUS_UNHANDLED_HTTP_CODE;
+import static org.aisen.download.core.Downloads.Impl.STATUS_UNHANDLED_REDIRECT;
 
 /**
  * Raised to indicate that the current request should be stopped immediately.

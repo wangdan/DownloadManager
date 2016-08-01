@@ -12,8 +12,8 @@ import android.text.format.Formatter;
 import android.util.Log;
 
 import org.aisen.download.R;
-import org.aisen.download.db.DownloadInfo;
-import org.aisen.download.downloads.Downloads;
+import org.aisen.download.core.DownloadInfo;
+import org.aisen.download.core.Downloads;
 import org.aisen.download.utils.Constants;
 
 import java.util.LinkedList;

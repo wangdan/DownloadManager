@@ -48,9 +48,6 @@ public final class Constants {
      */
     public static final String DIRECTORY_CACHE_RUNNING = "partial_downloads";
 
-    /** The column that used to be used for the HTTP method of the request */
-    public static final String RETRY_AFTER_X_REDIRECT_COUNT = "method";
-
     /**
      * When a number has to be appended to the filename, this string is used to separate the
      * base filename from the sequence number
@@ -75,18 +72,6 @@ public final class Constants {
     public static final String TEMP_SUFFIX = ".at";
 
     /**
-     * The minimum amount of time that the download manager accepts for
-     * a Retry-After response header with a parameter in delta-seconds.
-     */
-    public static final int MIN_RETRY_AFTER = 30; // 30s
-
-    /**
-     * The maximum amount of time that the download manager accepts for
-     * a Retry-After response header with a parameter in delta-seconds.
-     */
-    public static final int MAX_RETRY_AFTER = 24 * 60 * 60; // 24h
-
-    /**
      * The maximum number of redirects.
      */
     public static final int MAX_REDIRECTS = 5; // can't be more than 7.
@@ -99,6 +84,13 @@ public final class Constants {
 
     /** The minimum amount of time that has to elapse before the progress bar gets updated, in ms */
     public static final long MIN_PROGRESS_TIME = 300;// 2000
+
+    /**
+     * The time between a failure and the first retry after an IOException.
+     * Each subsequent retry grows exponentially, doubling each time.
+     * The time is in seconds.
+     */
+    public static final int RETRY_FIRST_DELAY = 30;
 
     /**
      * The number of times that the download manager will retry its network

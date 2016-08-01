@@ -22,7 +22,7 @@ import org.aisen.android.component.bitmaploader.BitmapLoader;
 import org.aisen.android.component.bitmaploader.core.ImageConfig;
 import org.aisen.android.support.inject.ViewInject;
 import org.aisen.android.ui.fragment.adapter.ARecycleViewItemView;
-import org.aisen.download.manager.Request;
+import org.aisen.download.Request;
 import org.aisen.downloader.DLogger;
 import org.aisen.downloader.DownloadController;
 import org.aisen.downloader.DownloadManager;
@@ -116,7 +116,7 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
                 Uri uri = Uri.parse(app.getApk_url());
                 Uri fileUri = Uri.fromFile(new File(SystemUtils.getSdcardPath() + "/" + app.getName() +  "123.apk"));
                 Request r = new Request(uri, fileUri);
-                org.aisen.download.manager.DownloadManager.getInstance().enqueue(r);
+                org.aisen.download.DownloadManager.getInstance().enqueue(r);
 
 
 

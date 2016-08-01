@@ -2,7 +2,13 @@ package org.aisen.download.utils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Locale;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by wangdan on 16/6/15.
@@ -31,18 +37,37 @@ public class Utils {
         }
     }
 
-    public static String normalizeMimeType(String type) {
-        if (type == null) {
-            return null;
-        }
+    public static ExecutorService buildDownloadExecutor(int maxThread) {
+        final int maxConcurrent = maxThread;
 
-        type = type.trim().toLowerCase(Locale.ROOT);
+        // Create a bounded thread pool for executing downloads; it creates
+        // threads as needed (up to maximum) and reclaims them when finished.
+        final ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                maxConcurrent, maxConcurrent, 10, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<Runnable>()) {
+            @Override
+            protected void afterExecute(Runnable r, Throwable t) {
+                super.afterExecute(r, t);
 
-        final int semicolonIndex = type.indexOf(';');
-        if (semicolonIndex != -1) {
-            type = type.substring(0, semicolonIndex);
-        }
-        return type;
+                if (t == null && r instanceof Future<?>) {
+                    try {
+                        ((Future<?>) r).get();
+                    } catch (CancellationException ce) {
+                        t = ce;
+                    } catch (ExecutionException ee) {
+                        t = ee.getCause();
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+                if (t != null) {
+                    DLogger.w("Utils", "Uncaught exception", t);
+                }
+            }
+        };
+        executor.allowCoreThreadTimeOut(true);
+        return executor;
     }
 
 }
