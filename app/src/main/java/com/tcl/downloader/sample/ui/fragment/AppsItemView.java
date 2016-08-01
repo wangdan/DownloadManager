@@ -17,10 +17,12 @@ import com.tcl.downloader.sample.support.utis.Utils;
 import com.tcl.downloader.sample.ui.widget.ProgressButton;
 
 import org.aisen.android.common.utils.Logger;
+import org.aisen.android.common.utils.SystemUtils;
 import org.aisen.android.component.bitmaploader.BitmapLoader;
 import org.aisen.android.component.bitmaploader.core.ImageConfig;
 import org.aisen.android.support.inject.ViewInject;
 import org.aisen.android.ui.fragment.adapter.ARecycleViewItemView;
+import org.aisen.download.manager.Request;
 import org.aisen.downloader.DLogger;
 import org.aisen.downloader.DownloadController;
 import org.aisen.downloader.DownloadManager;
@@ -112,11 +114,18 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
                 AppBean app = (AppBean) mActionButton.getTag();
 
                 Uri uri = Uri.parse(app.getApk_url());
+                Uri fileUri = Uri.fromFile(new File(SystemUtils.getSdcardPath() + "/" + app.getName() +  "123.apk"));
+                Request r = new Request(uri, fileUri);
+                org.aisen.download.manager.DownloadManager.getInstance().enqueue(r);
+
+
+
+
                 DownloadManager.Request request = new DownloadManager.Request(uri);
 //                request.setVisibleInDownloadsUi(true);// 文件可以被系统的Downloads应用扫描到并管理
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
                 request.setTitle(app.getName());
-                request.setDestinationUri(Uri.fromFile(new File(getContext().getExternalFilesDir("apk") + "/" + app.getName() +  ".apk")));
+                request.setDestinationUri(Uri.fromFile(new File(SystemUtils.getSdcardPath() + "/" + app.getName() +  ".apk")));
                 final long reference = downloadManager.enqueue(request);
                 DLogger.d(TAG, "enqueue reference[%s]", reference + "");
             }

@@ -19,6 +19,7 @@ public class SampleApplication extends GlobalContext {
         BitmapLoader.newInstance(this, String.valueOf(getExternalFilesDir("images")));
 
         new DownloadManager.Builder(this).setDebug(true).build();
+        org.aisen.download.manager.DownloadManager.setup(this, 2);
     }
 
 }
