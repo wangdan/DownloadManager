@@ -71,8 +71,11 @@ public class DBHelper extends SQLiteOpenHelper {
         return getWritableDatabase().insert(DB_TABLE, null, values);
     }
 
-    public final long update(long id, ContentValues values, String where, String[] selectionArgs) {
-        return -1;
+    public final long update(String key, ContentValues values) {
+        String whereClause = String.format(" %s = ? ", Downloads.Impl.COLUMN_KEY);;
+        String[] whereArgs = new String[]{ key };
+
+        return getWritableDatabase().update(DB_TABLE, values, whereClause, whereArgs);
     }
 
     private String[] columns() {

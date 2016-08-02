@@ -1,10 +1,13 @@
 package org.aisen.download;
 
 import android.content.Context;
+import android.net.Uri;
+import android.text.TextUtils;
 
 import org.aisen.download.core.DownloadInfo;
 import org.aisen.download.core.Downloads;
 import org.aisen.download.utils.Constants;
+import org.aisen.download.utils.Utils;
 
 import java.util.UUID;
 
@@ -173,41 +176,55 @@ public class DownloadManager {
         this.mContext = context;
     }
 
+    public String generateKey(Uri uri, Uri fileUri) {
+        return Utils.generateMD5(uri.toString() + fileUri.toString());
+    }
+
     /**
      * 开始下载
      *
      * @param request
      * @return
      */
-    public void enqueue(Request request) {
+    public String enqueue(Request request) {
         DownloadService.runAction(mContext, new EnqueueAction(request));
+
+        return request.mKey;
     }
 
     /**
      * 暂停下载
      *
-     * @param keys
+     * @param key
      * @return
      */
-    public void pause(String... keys) {
+    public void pause(String key) {
+        if (TextUtils.isEmpty(key))
+            return;
+
+        DownloadService.runAction(mContext, new PauseAction(key));
     }
 
     /**
      * 继续下载
      *
-     * @param keys
+     * @param key
      * @return
      */
-    public void resume(String... keys) {
+    public void resume(String key) {
+        if (TextUtils.isEmpty(key))
+            return;
+
+        DownloadService.runAction(mContext, new ResumeAction(key));
     }
 
     /**
      * 删除下载
      *
-     * @param keys
+     * @param key
      * @return
      */
-    public void remove(String... keys) {
+    public void remove(String key) {
     }
 
     /**
@@ -240,6 +257,36 @@ public class DownloadManager {
         @Override
         String key() {
             return request.mKey;
+        }
+
+    }
+
+    final static class PauseAction extends Action {
+
+        final String key;
+
+        PauseAction(String key) {
+            this.key = key;
+        }
+
+        @Override
+        String key() {
+            return key;
+        }
+
+    }
+
+    final static class ResumeAction extends Action {
+
+        final String key;
+
+        ResumeAction(String key) {
+            this.key = key;
+        }
+
+        @Override
+        String key() {
+            return key;
         }
 
     }

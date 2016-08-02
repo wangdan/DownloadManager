@@ -21,6 +21,8 @@ import org.aisen.download.utils.ConnectivityManagerUtils;
 import org.aisen.download.utils.Constants;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -48,8 +50,8 @@ public class DownloadInfo {
     public String mErrorMsg;// 失败消息
     public long mLastMod;// 最后修改时间
     public int mNumFailed;// 重连失败次数
-    public long mTotalBytes = -1l;// 文件大小
-    public long mCurrentBytes = -1l;// 下载进度
+    public long mTotalBytes;// 文件大小
+    public long mCurrentBytes;// 下载进度
     public int mAllowedNetworkTypes;// 允许网络状态
     public boolean mAllowRoaming;// 是否能漫游下载
     public int mBypassRecommendedSizeLimit;// 移动网络限制
@@ -293,7 +295,7 @@ public class DownloadInfo {
                     mStatus = Impl.STATUS_RUNNING;
                     ContentValues values = new ContentValues();
                     values.put(Impl.COLUMN_STATUS, mStatus);
-                    mContext.getContentResolver().update(getAllDownloadsUri(), values, null, null);
+                    mDbHelper.update(mKey, values);
                 }
 
                 DownloadThread task = new DownloadThread(mDbHelper, mSystemFacade, mNotifier, this);
@@ -358,6 +360,18 @@ public class DownloadInfo {
                 return false;
         }
         return false;
+    }
+
+    public File getTempFile() throws IOException {
+        Uri fileUri = Uri.parse(mFilePath + Constants.TEMP_SUFFIX);
+
+        if (ContentResolver.SCHEME_FILE.equals(fileUri.getScheme())) {
+            // 先存临时文件
+            return new File(fileUri.getPath());
+        }
+        else {
+            throw new IOException("Invalid file : " + fileUri.toString());
+        }
     }
 
 }

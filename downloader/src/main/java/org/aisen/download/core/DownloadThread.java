@@ -1,6 +1,5 @@
 package org.aisen.download.core;
 
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -13,13 +12,11 @@ import org.aisen.download.ui.DownloadNotifier;
 import org.aisen.download.utils.ConnectivityManagerUtils;
 import org.aisen.download.utils.Constants;
 import org.aisen.download.utils.DLogger;
-import org.aisen.download.utils.IoUtils;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
@@ -70,7 +67,7 @@ public class DownloadThread implements Runnable {
     private ContentValues buildContentValues() {
         final ContentValues values = new ContentValues();
 
-        values.put(Downloads.Impl.COLUMN_URI, mInfo.mUri);
+//        values.put(Downloads.Impl.COLUMN_URI, mInfo.mUri);
         values.put(Downloads.Impl._DATA, mInfo.mFilePath);
         values.put(Downloads.Impl.COLUMN_STATUS, mInfo.mStatus);
         if (mInfo.mStatus == Downloads.Impl.STATUS_RUNNING) {
@@ -97,7 +94,7 @@ public class DownloadThread implements Runnable {
      * Blindly push update of current delta values to provider.
      */
     private void writeToDatabase() {
-        mDbHelper.update(mInfo.mId, buildContentValues(), null, null);
+        mDbHelper.update(mInfo.mKey, buildContentValues());
     }
 
     /**
@@ -105,7 +102,7 @@ public class DownloadThread implements Runnable {
      * that we haven't been paused or deleted.
      */
     private void writeToDatabaseOrThrow() throws StopRequestException {
-        if (mDbHelper.update(mInfo.mId, buildContentValues(), null, null) == 0) {
+        if (mDbHelper.update(mInfo.mKey, buildContentValues()) == 0) {
             throw new StopRequestException(STATUS_CANCELED, "Download deleted or missing!");
         }
     }
@@ -236,6 +233,27 @@ public class DownloadThread implements Runnable {
      * handle the response, and transfer the data to the destination file.
      */
     private void executeDownload() throws StopRequestException {
+        // 判断是否是断点续传
+        try {
+            File file = mInfo.getTempFile();
+            // 文件存在，判断下载的文件是否和数据库保持一致，不一致先删除文件再重新下载
+            if (file.exists()) {
+                if (mInfo.mCurrentBytes != file.length()) {
+                    file.delete();
+                    mInfo.mCurrentBytes = 0;
+                }
+                else {
+                    mInfo.mCurrentBytes = file.length();
+                }
+            }
+            // 文件不存在，就重新下载
+            else {
+                mInfo.mCurrentBytes = 0;
+            }
+        } catch (IOException e) {
+            throw new StopRequestException(STATUS_FILE_ERROR, e);
+        }
+
         final boolean resuming = mInfo.mCurrentBytes != 0;
 
         URL url;
@@ -349,37 +367,34 @@ public class DownloadThread implements Runnable {
         }
 
         InputStream in = null;
-        OutputStream out = null;
+        RandomAccessFile randomAccessFile = null;
         try {
             try {
                 in = conn.getInputStream();
             } catch (IOException e) {
                 throw new StopRequestException(STATUS_HTTP_DATA_ERROR, e);
             }
-
             try {
-                Uri fileUri = Uri.parse(mInfo.mFilePath + Constants.TEMP_SUFFIX);
-
-                if (ContentResolver.SCHEME_FILE.equals(fileUri.getScheme())) {
-                    // 先存临时文件
-                    out = new FileOutputStream(fileUri.getPath());
-                }
-                else {
-                    throw new IOException("Invalid file : " + fileUri.toString());
-                }
+                // 先存临时文件
+                randomAccessFile = new RandomAccessFile(mInfo.getTempFile(), "rwd");
+                randomAccessFile.seek(randomAccessFile.length());
             } catch (IOException e) {
                 throw new StopRequestException(STATUS_FILE_ERROR, e);
             }
 
-            transferData(in, out);
+            transferData(in, randomAccessFile);
         } finally {
-            IoUtils.closeQuietly(in);
-
             try {
-                if (out != null) out.flush();
-            } catch (IOException e) {
-            } finally {
-                IoUtils.closeQuietly(out);
+                if (in != null) {
+                    in.close();
+                }
+            } catch (Exception ignore) {
+            }
+            try {
+                if (randomAccessFile != null) {
+                    randomAccessFile.close();
+                }
+            } catch (Exception ignore) {
             }
         }
     }
@@ -388,7 +403,7 @@ public class DownloadThread implements Runnable {
      * Transfer as much data as possible from the HTTP response to the
      * destination file.
      */
-    private void transferData(InputStream in, OutputStream out)
+    private void transferData(InputStream in, RandomAccessFile out)
             throws StopRequestException {
         final byte buffer[] = new byte[Constants.BUFFER_SIZE];
         while (true) {
@@ -453,9 +468,6 @@ public class DownloadThread implements Runnable {
      * Check if current connectivity is valid for this request.
      */
     private void checkConnectivity() throws StopRequestException {
-        // checking connectivity will apply current policy
-//        mPolicyDirty = false;
-
         final NetworkState networkUsable = mInfo.checkCanUseNetwork(mInfo.mTotalBytes);
         if (networkUsable != NetworkState.OK) {
             int status = Downloads.Impl.STATUS_WAITING_FOR_NETWORK;
@@ -546,7 +558,7 @@ public class DownloadThread implements Runnable {
     /**
      * Add custom headers for this download to the HTTP request.
      */
-    private void addRequestHeaders(HttpURLConnection conn, boolean resuming) {
+    private void addRequestHeaders(HttpURLConnection conn, boolean resuming) throws StopRequestException {
 //        for (Pair<String, String> header : mInfo.getHeaders()) {
 //            conn.addRequestProperty(header.first, header.second);
 //        }
@@ -568,6 +580,8 @@ public class DownloadThread implements Runnable {
             if (mInfo.mETag != null) {
                 conn.addRequestProperty("If-Match", mInfo.mETag);
             }
+
+            // add Rang
             conn.addRequestProperty("Range", "bytes=" + mInfo.mCurrentBytes + "-");
         }
     }

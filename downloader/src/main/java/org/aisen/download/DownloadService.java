@@ -12,6 +12,7 @@ import com.google.common.collect.Maps;
 
 import org.aisen.download.core.DBHelper;
 import org.aisen.download.core.DownloadInfo;
+import org.aisen.download.core.Downloads;
 import org.aisen.download.core.RealSystemFacade;
 import org.aisen.download.ui.DownloadNotifier;
 import org.aisen.download.utils.Constants;
@@ -28,14 +29,25 @@ import java.util.concurrent.TimeUnit;
  */
 public class DownloadService extends Service {
 
-    public static final String TAG = Constants.TAG + "_DownloadService";
+    private static final String TAG = Constants.TAG + "_DownloadService";
+
+    private static LinkedBlockingQueue<DownloadManager.Action> mRequestQueue = new LinkedBlockingQueue<>();
+
+    final static void runAction(Context context, DownloadManager.Action action) {
+        context.startService(new Intent(context, DownloadService.class));
+
+        synchronized (mRequestQueue) {
+            mRequestQueue.add(action);
+        }
+    }
+
+    private final Object mLock = new Object();
 
     private DBHelper mDbHelper;
     private DownloadNotifier mNotifier;
     private RealSystemFacade mSystemFacade;
     private ExecutorService mExecutor;
     private CoreThread mCoreThread;
-    private static LinkedBlockingQueue<DownloadManager.Action> mRequestQueue = new LinkedBlockingQueue<>();
     private final Map<String, DownloadInfo> mDownloads = Maps.newHashMap();
 
     @Override
@@ -52,23 +64,17 @@ public class DownloadService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         int returnValue = super.onStartCommand(intent, flags, startId);
 
-        if (mCoreThread == null || !mCoreThread.isAlive()) {
-            if (mCoreThread != null) {
-                mCoreThread.running = false;
+        synchronized (mLock) {
+            if (mCoreThread == null || !mCoreThread.isAlive()) {
+                if (mCoreThread != null) {
+                    mCoreThread.running = false;
+                }
+                mCoreThread = new CoreThread();
+                mCoreThread.start();
             }
-            mCoreThread = new CoreThread();
-            mCoreThread.start();
         }
 
         return returnValue;
-    }
-
-    final static void runAction(Context context, DownloadManager.Action action) {
-        context.startService(new Intent(context, DownloadService.class));
-
-        synchronized (mRequestQueue) {
-            mRequestQueue.add(action);
-        }
     }
 
     @Nullable
@@ -90,7 +96,7 @@ public class DownloadService extends Service {
             while (running) {
                 try {
                     DLogger.v(TAG, "等待处理Request");
-                    DownloadManager.Action action = mRequestQueue.poll(30, TimeUnit.SECONDS);
+                    DownloadManager.Action action = mRequestQueue.poll(10, TimeUnit.SECONDS);
 
                     if (action != null) {
                         synchronized (mDownloads) {
@@ -161,20 +167,41 @@ public class DownloadService extends Service {
                 return;
             }
 
-            // 下载请求
-            if (action instanceof DownloadManager.EnqueueAction) {
-                DownloadManager.EnqueueAction enqueueAction = (DownloadManager.EnqueueAction) action;
+            if (!mDownloads.containsKey(key) || mDownloads.get(key) != info) {
+                mDownloads.put(key, info);
+            }
 
-                boolean ready = info.startDownloadIfReady(mExecutor);
-                if (ready) {
-                    DLogger.v(TAG, "Request[%s]", enqueueAction.request.toString());
+            synchronized (info) {
+                boolean runThread = false;
+
+                // 下载请求
+                if (action instanceof DownloadManager.EnqueueAction) {
+                    runThread = true;
                 }
-                else {
-                    DLogger.v(TAG, "Request[%s], Ready[false]", enqueueAction.request.toString());
+                // 暂停请求
+                else if (action instanceof DownloadManager.PauseAction) {
+                    info.mControl = Downloads.Impl.CONTROL_PAUSED;
+
+                    runThread = false;
+                }
+                // 开始下载
+                else if (action instanceof DownloadManager.ResumeAction) {
+                    info.mControl = Downloads.Impl.CONTROL_RUN;
+
+                    runThread = true;
+                }
+
+                if (runThread) {
+                    info.startDownloadIfReady(mExecutor);
                 }
             }
         }
 
+    }
+
+    private boolean checkThreadRunning() {
+
+        return false;
     }
 
     @Override

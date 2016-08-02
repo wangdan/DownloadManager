@@ -70,6 +70,8 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
     private AppBean mApp;
     private DownloadController.DownloadStatus mStatus;
 
+    private String key;
+
     public AppsItemView(Context context, View itemView, IDownloadSubject proxy) {
         super(context, itemView);
 
@@ -116,7 +118,7 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
                 Uri uri = Uri.parse(app.getApk_url());
                 Uri fileUri = Uri.fromFile(new File(SystemUtils.getSdcardPath() + "/" + app.getName() +  "123.apk"));
                 Request r = new Request(uri, fileUri);
-                org.aisen.download.DownloadManager.getInstance().enqueue(r);
+                key = org.aisen.download.DownloadManager.getInstance().enqueue(r);
 
 
 
@@ -132,11 +134,15 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
             // 暂停状态，继续下载
             else if (mStatus.status == DownloadManager.STATUS_PAUSED) {
                 downloadManager.resume(mStatus.id);
+
+                org.aisen.download.DownloadManager.getInstance().resume(key);
             }
             // 下载状态，暂停下载
             else if (mStatus.status == DownloadManager.STATUS_RUNNING ||
                             mStatus.status == DownloadManager.STATUS_WAITING) {
                 downloadManager.pause(mStatus.id);
+
+                org.aisen.download.DownloadManager.getInstance().pause(key);
             }
             // 已下载状态，清除下载
             else if (mStatus.status == DownloadManager.STATUS_SUCCESSFUL) {
