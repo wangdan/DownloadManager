@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.text.TextUtils;
 
 import org.aisen.download.utils.Constants;
+import org.aisen.download.utils.DLogger;
 import org.aisen.download.utils.Utils;
 
 import java.util.UUID;
@@ -137,10 +138,12 @@ public class DownloadManager {
     private Context mContext;
     private final DownloadController mController;
 
-    public static synchronized void setup(Context context, int maxThread) {
+    public static synchronized void setup(Context context, boolean debug, int maxThread) {
         if (mDownloadManager == null) {
             mDownloadManager = new DownloadManager(context, maxThread);
         }
+
+        DLogger.setup(context, debug);
     }
 
     public static DownloadManager getInstance() {

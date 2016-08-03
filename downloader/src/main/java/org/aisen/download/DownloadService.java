@@ -188,15 +188,16 @@ public class DownloadService extends Service {
                 }
                 // 暂停请求
                 else if (action instanceof DownloadManager.PauseAction) {
-                    info.mControl = Downloads.Impl.CONTROL_PAUSED;
+                    if (info.isActive()) {
+                        info.networkShutdown();
+                    }
 
-//                    if (!info.isActive()) {
-                        info.mStatus = Downloads.Impl.STATUS_PAUSED_BY_APP;
-//                    }
+                    info.mControl = Downloads.Impl.CONTROL_PAUSED;
+                    info.mStatus = Downloads.Impl.STATUS_PAUSED_BY_APP;
 
                     runThread = false;
                 }
-                // 开始下载
+                // 继续下载
                 else if (action instanceof DownloadManager.ResumeAction) {
                     info.mControl = Downloads.Impl.CONTROL_RUN;
 

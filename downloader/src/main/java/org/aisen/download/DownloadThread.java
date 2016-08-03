@@ -140,6 +140,9 @@ public class DownloadThread implements Runnable {
     /** Bytes transferred since current sample started. */
     private long mSpeedSampleBytes;
 
+    private boolean mShutdown = false;
+    private HttpURLConnection mConn;
+
     public DownloadThread(DBHelper dbHelper, SystemFacade systemFacade, DownloadNotifier notifier,
                           DownloadInfo info) {
         mDbHelper = dbHelper;
@@ -150,9 +153,20 @@ public class DownloadThread implements Runnable {
         mInfo = info;
     }
 
+    public void shutDown() {
+        this.mShutdown = true;
+        if (mConn != null) {
+            mConn.disconnect();
+        }
+    }
+
     @Override
     public void run() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+
+        if (mShutdown) {
+            return;
+        }
 
         // FIXME 如果已经下载了，直接提示
 //        if (DownloadInfo.queryDownloadStatus(mContext.getContentResolver(), mId)
@@ -183,49 +197,50 @@ public class DownloadThread implements Runnable {
         } catch (StopRequestException e) {
             DLogger.w(TAG, "run()", e);
 
-            mInfo.mStatus = e.getFinalStatus();
-            mInfo.mErrorMsg = e.getMessage();
+            if (!mShutdown) {
+                mInfo.mStatus = e.getFinalStatus();
+                mInfo.mErrorMsg = e.getMessage();
 
-            logWarning("Stop requested with status "
-                    + Downloads.Impl.statusToString(mInfo.mStatus) + ": "
-                    + mInfo.mErrorMsg);
+                logWarning("Stop requested with status "
+                        + Downloads.Impl.statusToString(mInfo.mStatus) + ": "
+                        + mInfo.mErrorMsg);
 
-            // Nobody below our level should request retries, since we handle
-            // failure counts at this level.
-            if (mInfo.mStatus == STATUS_WAITING_TO_RETRY) {
-                throw new IllegalStateException("Execution should always throw final error codes");
-            }
-
-            // Some errors should be retryable, unless we fail too many times.
-            if (isStatusRetryable(mInfo.mStatus)) {
-                if (mMadeProgress) {
-                    mInfo.mNumFailed = 1;
-                } else {
-                    mInfo.mNumFailed += 1;
+                // Nobody below our level should request retries, since we handle
+                // failure counts at this level.
+                if (mInfo.mStatus == STATUS_WAITING_TO_RETRY) {
+                    throw new IllegalStateException("Execution should always throw final error codes");
                 }
 
-                DLogger.v(TAG, "numFailed[%d], fileName[%s]", mInfo.mNumFailed, mInfo.mFilePath);
-
-                if (mInfo.mNumFailed < Constants.MAX_RETRIES) {
-                    final NetworkInfo info = mSystemFacade.getActiveNetworkInfo();
-                    if (info != null && info.getType() == mNetworkType && info.isConnected()) {
-                        // Underlying network is still intact, use normal backoff
-                        mInfo.mStatus = STATUS_WAITING_TO_RETRY;
+                // Some errors should be retryable, unless we fail too many times.
+                if (isStatusRetryable(mInfo.mStatus)) {
+                    if (mMadeProgress) {
+                        mInfo.mNumFailed = 1;
                     } else {
-                        // Network changed, retry on any next available
-                        mInfo.mStatus = STATUS_WAITING_FOR_NETWORK;
+                        mInfo.mNumFailed += 1;
                     }
 
-                    if ((mInfo.mETag == null && mMadeProgress)) {
-                        // However, if we wrote data and have no ETag to verify
-                        // contents against later, we can't actually resume.
-                        mInfo.mStatus = STATUS_CANNOT_RESUME;
+                    DLogger.v(TAG, "numFailed[%d], fileName[%s]", mInfo.mNumFailed, mInfo.mFilePath);
+
+                    if (mInfo.mNumFailed < Constants.MAX_RETRIES) {
+                        final NetworkInfo info = mSystemFacade.getActiveNetworkInfo();
+                        if (info != null && info.getType() == mNetworkType && info.isConnected()) {
+                            // Underlying network is still intact, use normal backoff
+                            mInfo.mStatus = STATUS_WAITING_TO_RETRY;
+                        } else {
+                            // Network changed, retry on any next available
+                            mInfo.mStatus = STATUS_WAITING_FOR_NETWORK;
+                        }
+
+                        if ((mInfo.mETag == null && mMadeProgress)) {
+                            // However, if we wrote data and have no ETag to verify
+                            // contents against later, we can't actually resume.
+                            mInfo.mStatus = STATUS_CANNOT_RESUME;
+                        }
                     }
                 }
+
+                publishDownload();
             }
-
-            publishDownload();
-
         } catch (Throwable t) {
             mInfo.mStatus = STATUS_UNKNOWN_ERROR;
             mInfo.mErrorMsg = t.toString();
@@ -241,6 +256,8 @@ public class DownloadThread implements Runnable {
             finalizeDestination();
 
             writeToDatabase();
+
+            mInfo.threadFinished();
         }
     }
 
@@ -255,6 +272,7 @@ public class DownloadThread implements Runnable {
             // 文件存在，判断下载的文件是否和数据库保持一致，不一致先删除文件再重新下载
             if (file.exists()) {
                 if (mInfo.mCurrentBytes != file.length()) {
+                    DLogger.w(TAG, "delete file, current = %s, length = %s", mInfo.mCurrentBytes + "", file.length() + "");
                     file.delete();
                     mInfo.mCurrentBytes = 0;
                 }
@@ -288,6 +306,7 @@ public class DownloadThread implements Runnable {
             try {
                 checkConnectivity();
                 conn = (HttpURLConnection) url.openConnection();
+                mConn = conn;
                 conn.setInstanceFollowRedirects(false);
                 conn.setConnectTimeout(DEFAULT_TIMEOUT);
                 conn.setReadTimeout(DEFAULT_TIMEOUT);

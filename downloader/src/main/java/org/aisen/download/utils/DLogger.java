@@ -15,8 +15,9 @@ public class DLogger {
 
 	static Context context;
 
-	static void setup(Context context) {
+	public static void setup(Context context, boolean debug) {
 		DLogger.context = context.getApplicationContext();
+		DLogger.DEBUG = debug;
 	}
 
 	public static void v(Object o) {

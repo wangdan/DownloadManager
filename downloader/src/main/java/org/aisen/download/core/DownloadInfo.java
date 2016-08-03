@@ -65,6 +65,7 @@ public class DownloadInfo {
     private final DownloadNotifier mNotifier;
 
     private Future<?> mSubmittedTask;
+    private DownloadThread mThread;
 
     public int mFuzz;
 
@@ -298,15 +299,29 @@ public class DownloadInfo {
                     mDbHelper.update(mKey, values);
                 }
 
-                DownloadThread task = new DownloadThread(mDbHelper, mSystemFacade, mNotifier, this);
-                mSubmittedTask = executor.submit(task);
+                mThread = new DownloadThread(mDbHelper, mSystemFacade, mNotifier, this);
+                mSubmittedTask = executor.submit(mThread);
             }
             return isReady;
         }
     }
 
+    public void networkShutdown() {
+        if (isActive()) {
+            if (mThread != null)
+                mThread.shutDown();
+
+            mSubmittedTask = null;
+        }
+    }
+
     public boolean isActive() {
         return mSubmittedTask != null && !mSubmittedTask.isDone();
+    }
+
+    public void threadFinished() {
+        mSubmittedTask = null;
+        mThread = null;
     }
 
     /**
