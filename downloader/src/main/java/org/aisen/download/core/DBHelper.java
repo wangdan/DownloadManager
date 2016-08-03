@@ -78,6 +78,13 @@ public class DBHelper extends SQLiteOpenHelper {
         return getWritableDatabase().update(DB_TABLE, values, whereClause, whereArgs);
     }
 
+    public final long remove(String key) {
+        String whereClause = String.format(" %s = ? ", Downloads.Impl.COLUMN_KEY);;
+        String[] whereArgs = new String[]{ key };
+
+        return getWritableDatabase().delete(DB_TABLE, whereClause, whereArgs);
+    }
+
     private String[] columns() {
         return new String[] { Downloads.Impl._ID,
                                 Downloads.Impl.COLUMN_KEY,

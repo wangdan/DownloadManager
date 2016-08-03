@@ -65,6 +65,8 @@ public class DownloadThread implements Runnable {
     private final SystemFacade mSystemFacade;
     private final DownloadNotifier mNotifier;
 
+    private final Object mLock = new Object();
+
     private final long mId;
 
     private final DownloadInfo mInfo;
@@ -154,9 +156,11 @@ public class DownloadThread implements Runnable {
     }
 
     public void shutDown() {
-        this.mShutdown = true;
-        if (mConn != null) {
-            mConn.disconnect();
+        synchronized (mLock) {
+            this.mShutdown = true;
+            if (mConn != null) {
+                mConn.disconnect();
+            }
         }
     }
 
@@ -195,8 +199,6 @@ public class DownloadThread implements Runnable {
             }
 
         } catch (StopRequestException e) {
-            DLogger.w(TAG, "run()", e);
-
             if (!mShutdown) {
                 mInfo.mStatus = e.getFinalStatus();
                 mInfo.mErrorMsg = e.getMessage();
@@ -218,8 +220,6 @@ public class DownloadThread implements Runnable {
                     } else {
                         mInfo.mNumFailed += 1;
                     }
-
-                    DLogger.v(TAG, "numFailed[%d], fileName[%s]", mInfo.mNumFailed, mInfo.mFilePath);
 
                     if (mInfo.mNumFailed < Constants.MAX_RETRIES) {
                         final NetworkInfo info = mSystemFacade.getActiveNetworkInfo();
@@ -258,6 +258,8 @@ public class DownloadThread implements Runnable {
             writeToDatabase();
 
             mInfo.threadFinished();
+
+            publishDownload();
         }
     }
 
@@ -272,7 +274,6 @@ public class DownloadThread implements Runnable {
             // 文件存在，判断下载的文件是否和数据库保持一致，不一致先删除文件再重新下载
             if (file.exists()) {
                 if (mInfo.mCurrentBytes != file.length()) {
-                    DLogger.w(TAG, "delete file, current = %s, length = %s", mInfo.mCurrentBytes + "", file.length() + "");
                     file.delete();
                     mInfo.mCurrentBytes = 0;
                 }
@@ -457,13 +458,16 @@ public class DownloadThread implements Runnable {
             }
 
             try {
-                out.write(buffer, 0, len);
+                synchronized (mLock) {
+                    if (!mShutdown) {
+                        out.write(buffer, 0, len);
 
-                mMadeProgress = true;
-                mInfo.mCurrentBytes += len;
+                        mMadeProgress = true;
+                        mInfo.mCurrentBytes += len;
 
-                updateProgress();
-
+                        updateProgress();
+                    }
+                }
             } catch (IOException e) {
                 throw new StopRequestException(STATUS_FILE_ERROR, e);
             }

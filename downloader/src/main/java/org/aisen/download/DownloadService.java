@@ -1,10 +1,12 @@
 package org.aisen.download;
 
 import android.app.Service;
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
@@ -19,6 +21,7 @@ import org.aisen.download.utils.Constants;
 import org.aisen.download.utils.DLogger;
 import org.aisen.download.utils.Utils;
 
+import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -141,84 +144,103 @@ public class DownloadService extends Service {
         private void runAction(DownloadManager.Action action) {
             String key = action.key();
 
-            DownloadInfo info = mDownloads.get(key);
+            while(true) {
+                DownloadInfo info = mDownloads.get(key);
 
-            if (info == null) {
-                info = readDB(key);
-            }
+                if (info == null) {
+                    info = readDB(key);
+                }
 
-            if (info == null && action instanceof DownloadManager.EnqueueAction) {
-                Request request = ((DownloadManager.EnqueueAction) action).request;
-                ContentValues contentValues = request.toContentValues();
+                if (info == null && action instanceof DownloadManager.EnqueueAction) {
+                    Request request = ((DownloadManager.EnqueueAction) action).request;
+                    ContentValues contentValues = request.toContentValues();
 
-                if (mDbHelper.insert(contentValues) == -1l) {
+                    if (mDbHelper.insert(contentValues) == -1l) {
 
-                    DLogger.w(TAG, "DownloadInfo 存库失败");
+                        DLogger.w(TAG, "DownloadInfo 存库失败");
+
+                        return;
+                    }
+                    else {
+                        info = readDB(key);
+                    }
+                }
+
+                if (info == null) {
+                    // 查询状态
+                    if (action instanceof DownloadManager.QueryAction) {
+                        DownloadManager.QueryAction queryAction = (DownloadManager.QueryAction) action;
+
+                        if (queryAction.publish && DownloadManager.getInstance() != null) {
+                            DownloadManager.getInstance().getController().publishDownload(new DownloadMsg(key));
+                        }
+                    }
 
                     return;
                 }
-                else {
-                    info = readDB(key);
-                }
-            }
 
-            if (info == null) {
-                // 查询状态
-                if (action instanceof DownloadManager.QueryAction) {
-                    DownloadManager.QueryAction queryAction = (DownloadManager.QueryAction) action;
+                // 下载成功
+                if (info.mStatus == Downloads.Impl.STATUS_SUCCESS) {
+                    Uri uri = Uri.parse(info.mFilePath);
+                    if (ContentResolver.SCHEME_FILE.equals(uri.getScheme())) {
+                        File file = new File(uri.getPath());
+                        if (!file.exists()) {
+                            mDbHelper.remove(key);
 
-                    if (queryAction.publish && DownloadManager.getInstance() != null) {
-                        DownloadManager.getInstance().getController().publishDownload(new DownloadMsg(key));
+                            mDownloads.remove(key);
+
+                            continue;
+                        }
                     }
                 }
 
-                return;
-            }
-
-            if (!mDownloads.containsKey(key) || mDownloads.get(key) != info) {
-                mDownloads.put(key, info);
-            }
-
-            synchronized (info) {
-                boolean runThread = false;
-
-                // 下载请求
-                if (action instanceof DownloadManager.EnqueueAction) {
-                    runThread = true;
+                if (!mDownloads.containsKey(key) || mDownloads.get(key) != info) {
+                    mDownloads.put(key, info);
                 }
-                // 暂停请求
-                else if (action instanceof DownloadManager.PauseAction) {
-                    if (info.isActive()) {
-                        info.networkShutdown();
+
+                synchronized (info) {
+                    boolean runThread = false;
+
+                    // 下载请求
+                    if (action instanceof DownloadManager.EnqueueAction) {
+                        runThread = true;
+                    }
+                    // 暂停请求
+                    else if (action instanceof DownloadManager.PauseAction) {
+                        if (info.isActive()) {
+                            info.networkShutdown();
+                        }
+
+                        info.mControl = Downloads.Impl.CONTROL_PAUSED;
+                        info.mStatus = Downloads.Impl.STATUS_PAUSED_BY_APP;
+
+                        runThread = false;
+                    }
+                    // 继续下载
+                    else if (action instanceof DownloadManager.ResumeAction) {
+                        info.mControl = Downloads.Impl.CONTROL_RUN;
+
+                        runThread = true;
+                    }
+                    // 查询状态
+                    else if (action instanceof DownloadManager.QueryAction) {
+                        DownloadManager.QueryAction queryAction = (DownloadManager.QueryAction) action;
+
+                        if (queryAction.publish && DownloadManager.getInstance() != null) {
+                            DownloadManager.getInstance().getController().publishDownload(info);
+                        }
                     }
 
-                    info.mControl = Downloads.Impl.CONTROL_PAUSED;
-                    info.mStatus = Downloads.Impl.STATUS_PAUSED_BY_APP;
-
-                    runThread = false;
-                }
-                // 继续下载
-                else if (action instanceof DownloadManager.ResumeAction) {
-                    info.mControl = Downloads.Impl.CONTROL_RUN;
-
-                    runThread = true;
-                }
-                // 查询状态
-                else if (action instanceof DownloadManager.QueryAction) {
-                    DownloadManager.QueryAction queryAction = (DownloadManager.QueryAction) action;
-
-                    if (queryAction.publish && DownloadManager.getInstance() != null) {
-                        DownloadManager.getInstance().getController().publishDownload(info);
+                    if (runThread) {
+                        info.startDownloadIfReady(mExecutor);
                     }
                 }
 
-                if (runThread) {
-                    info.startDownloadIfReady(mExecutor);
+                if (DownloadManager.getInstance() != null) {
+                    DownloadManager.getInstance().getController().publishDownload(info);
                 }
-            }
 
-            if (DownloadManager.getInstance() != null) {
-                DownloadManager.getInstance().getController().publishDownload(info);
+                break;
             }
         }
 

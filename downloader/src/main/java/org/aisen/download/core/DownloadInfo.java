@@ -320,7 +320,6 @@ public class DownloadInfo {
     }
 
     public void threadFinished() {
-        mSubmittedTask = null;
         mThread = null;
     }
 
