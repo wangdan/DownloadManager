@@ -7,7 +7,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
 import android.support.annotation.Nullable;
 
 import com.google.common.collect.Maps;
@@ -30,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by wangdan on 16/8/2.
  */
-public class DownloadService extends Service {
+public class DownloadService extends Service implements IDownloadSubject {
 
     private static final String TAG = Constants.TAG + "_DownloadService";
 
@@ -54,14 +57,32 @@ public class DownloadService extends Service {
 
     private final Map<String, DownloadInfo> mDownloads = Maps.newHashMap();
 
+    private Handler mHandle = new Handler(Looper.getMainLooper()) {
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+
+            if (msg.what == 0) {
+                mNotifier.updateWith(mDownloads.values());
+            }
+        }
+
+    };
+
     @Override
     public void onCreate() {
         super.onCreate();
 
         mDbHelper = new DBHelper(this);
         mNotifier = new DownloadNotifier(this);
+        mNotifier.cancelAll();
         mSystemFacade = new RealSystemFacade(this);
         mExecutor = Utils.buildDownloadExecutor(5);
+
+        if (DownloadManager.getInstance() != null) {
+            DownloadManager.getInstance().getController().register(this);
+        }
     }
 
     @Override
@@ -85,6 +106,26 @@ public class DownloadService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    @Override
+    public void attach(IDownloadObserver observer) {
+
+    }
+
+    @Override
+    public void detach(IDownloadObserver observer) {
+
+    }
+
+    @Override
+    public void publish(DownloadMsg downloadMsg) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            mNotifier.updateWith(mDownloads.values());
+        }
+        else {
+            mHandle.sendEmptyMessage(0);
+        }
     }
 
     class CoreThread extends Thread {
@@ -257,6 +298,10 @@ public class DownloadService extends Service {
         }
 
         mRequestQueue.clear();
+
+        if (DownloadManager.getInstance() != null) {
+            DownloadManager.getInstance().getController().unregister(this);
+        }
     }
 
 }

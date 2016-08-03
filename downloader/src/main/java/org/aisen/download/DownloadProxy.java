@@ -26,7 +26,7 @@ public class DownloadProxy implements IDownloadSubject {
         String key = Utils.generateMD5(observer.downloadURI(), observer.downloadFileURI());
 
         synchronized (observers) {
-            if (!observers.containsKey(observer)) {
+            if (!observers.containsKey(key)) {
                 observers.put(key, new ArrayList<IDownloadObserver>());
             }
             List<IDownloadObserver> observerList = observers.get(key);
@@ -49,7 +49,7 @@ public class DownloadProxy implements IDownloadSubject {
         String key = Utils.generateMD5(observer.downloadURI(), observer.downloadFileURI());
 
         synchronized (observers) {
-            if (observers.containsKey(observer)) {
+            if (observers.containsKey(key)) {
                 List<IDownloadObserver> observerList = observers.get(key);
 
                 if (observerList.contains(observer)) {

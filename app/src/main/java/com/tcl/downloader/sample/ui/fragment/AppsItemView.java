@@ -76,8 +76,13 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
 
     @Override
     public void onBindData(View view, AppBean app, int i) {
-        mApp = app;
-        mProxy.attach(this);
+        synchronized (this) {
+            if (mApp != null) {
+                mProxy.detach(this);
+            }
+            mApp = app;
+            mProxy.attach(this);
+        }
 
         mTitle.setText(app.getName());
         mVersion.setVisibility(View.VISIBLE);
@@ -120,8 +125,11 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
 
                 Uri uri = Uri.parse(app.getApk_url());
                 Uri fileUri = downloadFileURI();
-                Request r = new Request(uri, fileUri);
-                DownloadManager.getInstance().enqueue(r);
+                Request request = new Request(uri, fileUri);
+                request.setTitle(mApp.getName());
+                request.setDescription(mApp.getDescription());
+                request.setNotificationVisibility(Request.VISIBILITY_VISIBLE);
+                DownloadManager.getInstance().enqueue(request);
             }
             // 暂停状态，继续下载
             else if (downloadMsg.getStatus() == DownloadManager.STATUS_PAUSED) {

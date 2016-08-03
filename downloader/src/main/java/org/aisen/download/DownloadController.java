@@ -53,7 +53,7 @@ public final class DownloadController {
         }
     }
 
-    public synchronized void unregister(DownloadProxy callback) {
+    public synchronized void unregister(IDownloadSubject callback) {
         if (callback == null) {
             return;
         }
