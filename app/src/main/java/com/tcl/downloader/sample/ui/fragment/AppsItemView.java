@@ -149,7 +149,6 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {
                                             downloadManager.remove(downloadMsg.getKey());
-                                            Toast.makeText(getContext(), "删除 1 条数据", Toast.LENGTH_SHORT).show();
                                         }
 
                                     })

@@ -204,6 +204,10 @@ public class DownloadManager {
      * @return
      */
     public void remove(String key) {
+        if (TextUtils.isEmpty(key))
+            return;
+
+        DownloadService.runAction(mContext, new RemoveAction(key));
     }
 
     public void query(Uri uri, Uri fileUri) {
@@ -298,6 +302,21 @@ public class DownloadManager {
         QueryAction(String key, boolean publish) {
             this.key = key;
             this.publish = publish;
+        }
+
+        @Override
+        String key() {
+            return key;
+        }
+
+    }
+
+    final static class RemoveAction extends Action {
+
+        final String key;
+
+        RemoveAction(String key) {
+            this.key = key;
         }
 
         @Override

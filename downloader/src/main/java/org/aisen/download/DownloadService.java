@@ -25,6 +25,7 @@ import org.aisen.download.utils.DLogger;
 import org.aisen.download.utils.Utils;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -209,13 +210,15 @@ public class DownloadService extends Service implements IDownloadSubject {
 
                 if (info == null) {
                     // 查询状态
-                    if (action instanceof DownloadManager.QueryAction) {
-                        DownloadManager.QueryAction queryAction = (DownloadManager.QueryAction) action;
+//                    if (action instanceof DownloadManager.QueryAction) {
+//                        DownloadManager.QueryAction queryAction = (DownloadManager.QueryAction) action;
+//
+//                        if (queryAction.publish && DownloadManager.getInstance() != null) {
+//                            DownloadManager.getInstance().getController().publishDownload(new DownloadMsg(key));
+//                        }
+//                    }
 
-                        if (queryAction.publish && DownloadManager.getInstance() != null) {
-                            DownloadManager.getInstance().getController().publishDownload(new DownloadMsg(key));
-                        }
-                    }
+                    DownloadManager.getInstance().getController().publishDownload(new DownloadMsg(action.key()));
 
                     return;
                 }
@@ -254,8 +257,6 @@ public class DownloadService extends Service implements IDownloadSubject {
 
                         info.mControl = Downloads.Impl.CONTROL_PAUSED;
                         info.mStatus = Downloads.Impl.STATUS_PAUSED_BY_APP;
-
-                        runThread = false;
                     }
                     // 继续下载
                     else if (action instanceof DownloadManager.ResumeAction) {
@@ -270,6 +271,34 @@ public class DownloadService extends Service implements IDownloadSubject {
                         if (queryAction.publish && DownloadManager.getInstance() != null) {
                             DownloadManager.getInstance().getController().publishDownload(info);
                         }
+                    }
+                    // 删除下载
+                    else if (action instanceof DownloadManager.RemoveAction) {
+                        mDownloads.remove(key);
+                        mDbHelper.remove(key);
+
+                        if (info.mStatus == Downloads.Impl.STATUS_SUCCESS) {
+                            Uri uri = Uri.parse(info.mFilePath);
+                            if (ContentResolver.SCHEME_FILE.equals(uri.getScheme())) {
+                                File file = new File(uri.getPath());
+                                if (file.exists()) {
+                                    file.delete();
+                                }
+                                try {
+                                    File temp = info.getTempFile();
+                                    if (temp.exists()) {
+                                        temp.delete();
+                                    }
+                                } catch (IOException ignore) {
+                                }
+
+                            }
+                        }
+                        else if (info.isActive()) {
+                            info.networkShutdown();
+                        }
+
+                        continue;
                     }
 
                     if (runThread) {
