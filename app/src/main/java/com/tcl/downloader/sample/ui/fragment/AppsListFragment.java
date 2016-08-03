@@ -6,8 +6,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.aisen.downloader.DownloadController;
-import org.aisen.downloader.DownloadProxy;
 import com.tcl.downloader.sample.R;
 import com.tcl.downloader.sample.support.sdk.SDK;
 import com.tcl.downloader.sample.support.sdk.bean.AppBean;
@@ -19,6 +17,8 @@ import org.aisen.android.support.paging.PageIndexPaging;
 import org.aisen.android.ui.fragment.ARecycleViewFragment;
 import org.aisen.android.ui.fragment.itemview.IITemView;
 import org.aisen.android.ui.fragment.itemview.IItemViewCreator;
+import org.aisen.download.DownloadManager;
+import org.aisen.download.DownloadProxy;
 
 import java.util.List;
 
@@ -115,14 +115,18 @@ public class AppsListFragment extends ARecycleViewFragment<AppBean, AppBeans> {
     public void onResume() {
         super.onResume();
 
-        DownloadController.register(mDownloadProxy);
+        if (DownloadManager.getInstance() != null) {
+            DownloadManager.getInstance().getController().register(mDownloadProxy);
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
 
-        DownloadController.unregister(mDownloadProxy);
+        if (DownloadManager.getInstance() != null) {
+            DownloadManager.getInstance().getController().unregister(mDownloadProxy);
+        }
     }
 
 }

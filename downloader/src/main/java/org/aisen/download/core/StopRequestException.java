@@ -25,7 +25,7 @@ import static org.aisen.download.core.Downloads.Impl.STATUS_UNHANDLED_REDIRECT;
  * not to contain any PII, meaning it generally can't include any information about the request
  * URI, headers, or destination filename.
  */
-class StopRequestException extends Exception {
+public class StopRequestException extends Exception {
 
     private static final long serialVersionUID = -447754550331890856L;
 

@@ -13,6 +13,7 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 
+import org.aisen.download.DownloadThread;
 import org.aisen.download.core.Downloads.Impl;
 import org.aisen.download.Request;
 import org.aisen.download.ui.DownloadNotifier;
@@ -21,7 +22,6 @@ import org.aisen.download.utils.ConnectivityManagerUtils;
 import org.aisen.download.utils.Constants;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -289,7 +289,7 @@ public class DownloadInfo {
     public boolean startDownloadIfReady(ExecutorService executor) {
         synchronized (this) {
             final boolean isReady = isReadyToDownload();
-            final boolean isActive = mSubmittedTask != null && !mSubmittedTask.isDone();
+            final boolean isActive = isActive();
             if (isReady && !isActive) {
                 if (mStatus != Impl.STATUS_RUNNING) {
                     mStatus = Impl.STATUS_RUNNING;
@@ -303,6 +303,10 @@ public class DownloadInfo {
             }
             return isReady;
         }
+    }
+
+    public boolean isActive() {
+        return mSubmittedTask != null && !mSubmittedTask.isDone();
     }
 
     /**

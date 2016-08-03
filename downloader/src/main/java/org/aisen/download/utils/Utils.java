@@ -1,5 +1,7 @@
 package org.aisen.download.utils;
 
+import android.net.Uri;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.CancellationException;
@@ -15,7 +17,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class Utils {
 
-    public static String generateMD5(String key) {
+    public static String generateMD5(Uri uri, Uri fileUri) {
+        String key = uri.toString() + fileUri.toString();
+
         try {
             MessageDigest e = MessageDigest.getInstance("MD5");
             e.update(key.getBytes());

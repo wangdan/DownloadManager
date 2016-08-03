@@ -22,13 +22,11 @@ import org.aisen.android.component.bitmaploader.BitmapLoader;
 import org.aisen.android.component.bitmaploader.core.ImageConfig;
 import org.aisen.android.support.inject.ViewInject;
 import org.aisen.android.ui.fragment.adapter.ARecycleViewItemView;
+import org.aisen.download.DownloadManager;
+import org.aisen.download.DownloadMsg;
+import org.aisen.download.IDownloadObserver;
+import org.aisen.download.IDownloadSubject;
 import org.aisen.download.Request;
-import org.aisen.downloader.DLogger;
-import org.aisen.downloader.DownloadController;
-import org.aisen.downloader.DownloadManager;
-import org.aisen.downloader.IDownloadObserver;
-import org.aisen.downloader.IDownloadSubject;
-import org.aisen.downloader.downloads.Downloads;
 
 import java.io.File;
 
@@ -68,9 +66,7 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
 
     private IDownloadSubject mProxy;
     private AppBean mApp;
-    private DownloadController.DownloadStatus mStatus;
-
-    private String key;
+    private DownloadMsg downloadMsg;
 
     public AppsItemView(Context context, View itemView, IDownloadSubject proxy) {
         super(context, itemView);
@@ -104,55 +100,48 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
             BitmapLoader.getInstance().display(null, app.getIcon_url(), mIcon, config);
         }
         mSelfLeftMargin.setVisibility(View.GONE);
+
+        if (DownloadManager.getInstance() != null) {
+            DownloadManager.getInstance().query(downloadURI(), downloadFileURI());
+        }
     }
 
     @Override
     public void onClick(View v) {
         if (v == mActionButton) {
+            if (downloadMsg == null)
+                return;
+
             final DownloadManager downloadManager = DownloadManager.getInstance();
 
             // 初始化状态，开始下载
-            if (mStatus == null || mStatus.status == -1) {
+            if (downloadMsg.isNull()) {
                 AppBean app = (AppBean) mActionButton.getTag();
 
                 Uri uri = Uri.parse(app.getApk_url());
-                Uri fileUri = Uri.fromFile(new File(SystemUtils.getSdcardPath() + "/" + app.getName() +  "123.apk"));
+                Uri fileUri = downloadFileURI();
                 Request r = new Request(uri, fileUri);
-                key = org.aisen.download.DownloadManager.getInstance().enqueue(r);
-
-
-
-
-                DownloadManager.Request request = new DownloadManager.Request(uri);
-//                request.setVisibleInDownloadsUi(true);// 文件可以被系统的Downloads应用扫描到并管理
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
-                request.setTitle(app.getName());
-                request.setDestinationUri(Uri.fromFile(new File(SystemUtils.getSdcardPath() + "/" + app.getName() +  ".apk")));
-                final long reference = downloadManager.enqueue(request);
-                DLogger.d(TAG, "enqueue reference[%s]", reference + "");
+                DownloadManager.getInstance().enqueue(r);
             }
             // 暂停状态，继续下载
-            else if (mStatus.status == DownloadManager.STATUS_PAUSED) {
-                downloadManager.resume(mStatus.id);
-
-                org.aisen.download.DownloadManager.getInstance().resume(key);
+            else if (downloadMsg.getStatus() == DownloadManager.STATUS_PAUSED) {
+                downloadManager.resume(downloadMsg.getKey());
             }
             // 下载状态，暂停下载
-            else if (mStatus.status == DownloadManager.STATUS_RUNNING ||
-                            mStatus.status == DownloadManager.STATUS_WAITING) {
-                downloadManager.pause(mStatus.id);
-
-                org.aisen.download.DownloadManager.getInstance().pause(key);
+            else if (downloadMsg.getStatus() == DownloadManager.STATUS_RUNNING ||
+                            downloadMsg.getStatus() == DownloadManager.STATUS_WAITING) {
+                downloadManager.pause(downloadMsg.getKey());
             }
             // 已下载状态，清除下载
-            else if (mStatus.status == DownloadManager.STATUS_SUCCESSFUL) {
+            else if (downloadMsg.getStatus() == DownloadManager.STATUS_SUCCESSFUL) {
                 new AlertDialog.Builder(getContext())
                                     .setMessage(String.format("%s 已下载，是否清除并删除文件？", mApp.getName()))
                                     .setPositiveButton("确定", new DialogInterface.OnClickListener() {
 
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {
-                                            Toast.makeText(getContext(), String.format("删除 %d 条数据", downloadManager.remove(mStatus.id)), Toast.LENGTH_SHORT).show();
+                                            downloadManager.remove(downloadMsg.getKey());
+                                            Toast.makeText(getContext(), "删除 1 条数据", Toast.LENGTH_SHORT).show();
                                         }
 
                                     })
@@ -161,78 +150,86 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
             }
             else {
                 Toast.makeText(getContext(),
-                                String.format("处理错误，请检查代码... AppInfo[%s], Status[%s]", mApp.getName(), Downloads.Impl.statusToString(mStatus.status)),
+                                String.format("处理错误，请检查代码... AppInfo[%s], Status[%s]", mApp.getName(), downloadMsg.status2String()),
                                 Toast.LENGTH_SHORT).show();
             }
         }
     }
 
     @Override
-    public String downloadURI() {
+    public Uri downloadURI() {
         if (mApp != null) {
-            return mApp.getApk_url();
+            return Uri.parse(mApp.getApk_url());
         }
 
         return null;
     }
 
     @Override
-    public void onDownloadInit() {
-        Logger.d(TAG, "onDownloadInit[%s]", mApp.getName());
+    public Uri downloadFileURI() {
+        if (mApp != null) {
+            return Uri.fromFile(new File(SystemUtils.getSdcardPath() + "/" + mApp.getName() +  "123.apk"));
+        }
 
-        mStatus = null;
-        mActionButton.setText("下载");
-        mActionButton.setProgress(0);
-        setButtonNormal();
+        return null;
     }
 
     @Override
-    public void onDownloadChanged(DownloadController.DownloadStatus status) {
-        mStatus = status;
+    public void onPublish(DownloadMsg downloadMsg) {
+        this.downloadMsg = downloadMsg;
 
-        // 失败
-        if (status.status == DownloadManager.STATUS_FAILED) {
-            mActionButton.setText("失败");
-
+        if (downloadMsg.isNull()) {
+            mActionButton.setText("下载");
+            mActionButton.setProgress(0);
             setButtonNormal();
         }
-        // 成功
-        else if (status.status == DownloadManager.STATUS_SUCCESSFUL) {
-            mActionButton.setText("已下载");
-            mActionButton.setProgress(100);
+        else {
+            int status = downloadMsg.getStatus();
 
-            setButtonNormal();
-        }
-        // 暂停
-        else if (status.status == DownloadManager.STATUS_PAUSED) {
-            mActionButton.setText("继续");
+            // 失败
+            if (status == DownloadManager.STATUS_FAILED) {
+                mActionButton.setText("失败");
 
-            setButtonProgress(status.progress, status.total);
-        }
-        // 等待
-        else if (status.status == DownloadManager.STATUS_PENDING ||
-                        status.status == DownloadManager.STATUS_WAITING) {
-            mActionButton.setText("等待");
-
-            setButtonProgress(status.progress, status.total);
-        }
-        // 下载中
-        else if (status.status == DownloadManager.STATUS_RUNNING) {
-            mActionButton.setText(Math.round(status.progress * 100.0f / status.total) + "%");
-
-            setButtonProgress(status.progress, status.total);
-        }
-
-        // 打印日志
-        if (mApp != null) {
-            if (status.progress > 0 && status.total > 0) {
-                long progress = status.progress;
-                long total = status.total;
-
-                Logger.v(TAG, "app[%s], status[%s], progress[%s], local_uri[%s], reason[%s]", mApp.getName(), Downloads.Impl.statusToString(status.status), Math.round(progress * 100.0f / total) + "%", status.localUri, status.reason);
+                setButtonNormal();
             }
-            else {
-                Logger.v(TAG, "app[%s], status[%s], reason[%s], local_uri[%s]", mApp.getName(), Downloads.Impl.statusToString(status.status), status.reason , status.localUri);
+            // 成功
+            else if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                mActionButton.setText("已下载");
+                mActionButton.setProgress(100);
+
+                setButtonNormal();
+            }
+            // 暂停
+            else if (status == DownloadManager.STATUS_PAUSED) {
+                mActionButton.setText("继续");
+
+                setButtonProgress(downloadMsg.getCurrent(), downloadMsg.getTotal());
+            }
+            // 等待
+            else if (status == DownloadManager.STATUS_PENDING ||
+                    status == DownloadManager.STATUS_WAITING) {
+                mActionButton.setText("等待");
+
+                setButtonProgress(downloadMsg.getCurrent(), downloadMsg.getTotal());
+            }
+            // 下载中
+            else if (status == DownloadManager.STATUS_RUNNING) {
+                mActionButton.setText(Math.round(downloadMsg.getCurrent() * 100.0f / downloadMsg.getTotal()) + "%");
+
+                setButtonProgress(downloadMsg.getCurrent(), downloadMsg.getTotal());
+            }
+
+            // 打印日志
+            if (mApp != null) {
+                if (downloadMsg.getCurrent() > 0 && downloadMsg.getTotal() > 0) {
+                    long progress = downloadMsg.getCurrent();
+                    long total = downloadMsg.getTotal();
+
+                    Logger.v(TAG, "app[%s], status[%s], progress[%s], local_uri[%s], reason[%s]", mApp.getName(), downloadMsg.status2String(), Math.round(progress * 100.0f / total) + "%", downloadMsg.getFilePath().toString(), downloadMsg.getReason() + "");
+                }
+                else {
+                    Logger.v(TAG, "app[%s], status[%s], reason[%s], local_uri[%s]", mApp.getName(), downloadMsg.status2String(), downloadMsg.getReason() + "", downloadMsg.getFilePath().toString());
+                }
             }
         }
     }

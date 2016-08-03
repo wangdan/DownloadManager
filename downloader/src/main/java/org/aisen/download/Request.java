@@ -88,7 +88,7 @@ public class Request {
             throw new IllegalArgumentException("Can only download HTTP/HTTPS URIs: " + uri);
         }
         if (TextUtils.isEmpty(key)) {
-            key = Utils.generateMD5(uri.toString() + fileUri.toString());
+            key = Utils.generateMD5(uri, fileUri);
         }
         mKey = key;
         mUri = uri;

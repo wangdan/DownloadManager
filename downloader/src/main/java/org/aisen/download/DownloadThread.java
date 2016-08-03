@@ -1,4 +1,4 @@
-package org.aisen.download.core;
+package org.aisen.download;
 
 import android.content.ContentValues;
 import android.net.NetworkInfo;
@@ -7,7 +7,12 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.text.TextUtils;
 
+import org.aisen.download.core.DBHelper;
+import org.aisen.download.core.DownloadInfo;
 import org.aisen.download.core.DownloadInfo.NetworkState;
+import org.aisen.download.core.Downloads;
+import org.aisen.download.core.StopRequestException;
+import org.aisen.download.core.SystemFacade;
 import org.aisen.download.ui.DownloadNotifier;
 import org.aisen.download.utils.ConnectivityManagerUtils;
 import org.aisen.download.utils.Constants;
@@ -71,12 +76,18 @@ public class DownloadThread implements Runnable {
         values.put(Downloads.Impl._DATA, mInfo.mFilePath);
         values.put(Downloads.Impl.COLUMN_STATUS, mInfo.mStatus);
         if (mInfo.mStatus == Downloads.Impl.STATUS_RUNNING) {
+            mInfo.mControl = Downloads.Impl.CONTROL_RUN;
+
             values.put(Downloads.Impl.COLUMN_CONTROL, Downloads.Impl.CONTROL_RUN);
         }
         else if (mInfo.mStatus == Downloads.Impl.STATUS_PAUSED_BY_APP) {
+            mInfo.mControl = Downloads.Impl.CONTROL_PAUSED;
+
             values.put(Downloads.Impl.COLUMN_CONTROL, Downloads.Impl.CONTROL_PAUSED);
         }
         else {
+            mInfo.mControl = Downloads.Impl.CONTROL_NONE;
+
             values.put(Downloads.Impl.COLUMN_CONTROL, Downloads.Impl.CONTROL_NONE);
         }
         values.put(Downloads.Impl.COLUMN_FAILED_CONNECTIONS, mInfo.mNumFailed);
@@ -84,7 +95,8 @@ public class DownloadThread implements Runnable {
         values.put(Downloads.Impl.COLUMN_CURRENT_BYTES, mInfo.mCurrentBytes);
         values.put(Constants.ETAG, mInfo.mETag);
 
-        values.put(Downloads.Impl.COLUMN_LAST_MODIFICATION, mSystemFacade.currentTimeMillis());
+        mInfo.mLastMod = mSystemFacade.currentTimeMillis();
+        values.put(Downloads.Impl.COLUMN_LAST_MODIFICATION, mInfo.mLastMod);
         values.put(Downloads.Impl.COLUMN_ERROR_MSG, mInfo.mErrorMsg);
 
         return values;
@@ -212,9 +224,13 @@ public class DownloadThread implements Runnable {
                 }
             }
 
+            publishDownload();
+
         } catch (Throwable t) {
             mInfo.mStatus = STATUS_UNKNOWN_ERROR;
             mInfo.mErrorMsg = t.toString();
+
+            publishDownload();
 
             logError("Failed: " + mInfo.mErrorMsg, t);
         } finally {
@@ -440,6 +456,12 @@ public class DownloadThread implements Runnable {
         }
     }
 
+    private void publishDownload() {
+        if (DownloadManager.getInstance() != null) {
+            DownloadManager.getInstance().getController().publishDownload(mInfo);
+        }
+    }
+
     /**
      * Called just before the thread finishes, regardless of status, to take any
      * necessary action on the downloaded file.
@@ -523,6 +545,8 @@ public class DownloadThread implements Runnable {
 
             mSpeedSampleStart = now;
             mSpeedSampleBytes = currentBytes;
+
+            publishDownload();
         }
 
         final long bytesDelta = currentBytes - mLastUpdateBytes;
@@ -553,6 +577,8 @@ public class DownloadThread implements Runnable {
 
         // Check connectivity again now that we know the total size
         checkConnectivity();
+
+        publishDownload();
     }
 
     /**

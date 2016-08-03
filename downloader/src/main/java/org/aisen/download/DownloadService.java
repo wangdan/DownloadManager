@@ -48,6 +48,7 @@ public class DownloadService extends Service {
     private RealSystemFacade mSystemFacade;
     private ExecutorService mExecutor;
     private CoreThread mCoreThread;
+
     private final Map<String, DownloadInfo> mDownloads = Maps.newHashMap();
 
     @Override
@@ -162,7 +163,14 @@ public class DownloadService extends Service {
             }
 
             if (info == null) {
-                DLogger.w(TAG, "处理Action失败");
+                // 查询状态
+                if (action instanceof DownloadManager.QueryAction) {
+                    DownloadManager.QueryAction queryAction = (DownloadManager.QueryAction) action;
+
+                    if (queryAction.publish && DownloadManager.getInstance() != null) {
+                        DownloadManager.getInstance().getController().publishDownload(new DownloadMsg(key));
+                    }
+                }
 
                 return;
             }
@@ -182,6 +190,10 @@ public class DownloadService extends Service {
                 else if (action instanceof DownloadManager.PauseAction) {
                     info.mControl = Downloads.Impl.CONTROL_PAUSED;
 
+//                    if (!info.isActive()) {
+                        info.mStatus = Downloads.Impl.STATUS_PAUSED_BY_APP;
+//                    }
+
                     runThread = false;
                 }
                 // 开始下载
@@ -190,18 +202,25 @@ public class DownloadService extends Service {
 
                     runThread = true;
                 }
+                // 查询状态
+                else if (action instanceof DownloadManager.QueryAction) {
+                    DownloadManager.QueryAction queryAction = (DownloadManager.QueryAction) action;
+
+                    if (queryAction.publish && DownloadManager.getInstance() != null) {
+                        DownloadManager.getInstance().getController().publishDownload(info);
+                    }
+                }
 
                 if (runThread) {
                     info.startDownloadIfReady(mExecutor);
                 }
             }
+
+            if (DownloadManager.getInstance() != null) {
+                DownloadManager.getInstance().getController().publishDownload(info);
+            }
         }
 
-    }
-
-    private boolean checkThreadRunning() {
-
-        return false;
     }
 
     @Override
@@ -210,6 +229,8 @@ public class DownloadService extends Service {
 
         if (mCoreThread != null) {
             mCoreThread.running = false;
+
+            mCoreThread = null;
         }
 
         mRequestQueue.clear();
