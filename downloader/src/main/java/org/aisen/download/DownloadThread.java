@@ -427,15 +427,20 @@ public class DownloadThread implements Runnable {
             } catch (IOException e) {
                 throw new StopRequestException(STATUS_HTTP_DATA_ERROR, e);
             }
+            File tempFile = null;
             try {
+                tempFile = mInfo.getTempFile();
                 // 先存临时文件
-                randomAccessFile = new RandomAccessFile(mInfo.getTempFile(), "rwd");
+                if (!tempFile.getParentFile().exists())
+                    tempFile.getParentFile().mkdirs();
+
+                randomAccessFile = new RandomAccessFile(tempFile, "rwd");
                 randomAccessFile.seek(randomAccessFile.length());
             } catch (IOException e) {
                 throw new StopRequestException(STATUS_FILE_ERROR, e);
             }
 
-            transferData(in, randomAccessFile);
+            transferData(in, randomAccessFile, tempFile);
         } finally {
             try {
                 if (in != null) {
@@ -456,7 +461,7 @@ public class DownloadThread implements Runnable {
      * Transfer as much data as possible from the HTTP response to the
      * destination file.
      */
-    private void transferData(InputStream in, RandomAccessFile out)
+    private void transferData(InputStream in, RandomAccessFile out, File outFile)
             throws StopRequestException {
         final byte buffer[] = new byte[Constants.BUFFER_SIZE];
         while (true) {
@@ -477,7 +482,12 @@ public class DownloadThread implements Runnable {
             try {
                 synchronized (mLock) {
                     if (!mShutdown) {
-                        out.write(buffer, 0, len);
+                        if (outFile != null && outFile.exists()) {
+                            out.write(buffer, 0, len);
+                        }
+                        else {
+                            throw new StopRequestException(STATUS_CANCELED, new IOException("temp file not exist"));
+                        }
 
                         mMadeProgress = true;
                         mInfo.mCurrentBytes += len;

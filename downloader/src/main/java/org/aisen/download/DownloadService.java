@@ -255,6 +255,17 @@ public class DownloadService extends Service implements IDownloadSubject {
                     info = readDB(key);
                 }
 
+                // 如果是下载请求，当前状态是失败的，先清理数据再重新下载
+                if (action instanceof DownloadManager.EnqueueAction) {
+                    if (info != null && Downloads.Impl.isStatusClientError(info.mStatus)) {
+                        mDbHelper.remove(key);
+
+                        mDownloads.remove(key);
+
+                        continue;
+                    }
+                }
+
                 if (info == null && action instanceof DownloadManager.EnqueueAction) {
                     Request request = ((DownloadManager.EnqueueAction) action).request;
                     ContentValues contentValues = request.toContentValues();
@@ -266,7 +277,7 @@ public class DownloadService extends Service implements IDownloadSubject {
                         return;
                     }
                     else {
-                        info = readDB(key);
+                        continue;
                     }
                 }
 

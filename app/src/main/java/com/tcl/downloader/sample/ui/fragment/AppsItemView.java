@@ -120,7 +120,8 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
             final DownloadManager downloadManager = DownloadManager.getInstance();
 
             // 初始化状态，开始下载
-            if (downloadMsg.isNull()) {
+            if (downloadMsg.isNull() ||
+                    downloadMsg.getStatus() == DownloadManager.STATUS_FAILED) {
                 AppBean app = (AppBean) mActionButton.getTag();
 
                 Uri uri = Uri.parse(app.getApk_url());
