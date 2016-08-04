@@ -186,6 +186,7 @@ public class Request {
         ContentValues values = new ContentValues();
 
         values.put(Downloads.Impl.COLUMN_KEY, mKey);
+        values.put(Downloads.Impl.COLUMN_STATUS, Downloads.Impl.STATUS_PENDING);
         values.put(Downloads.Impl.COLUMN_URI, mUri.toString());
         values.put(Downloads.Impl._DATA, mFileUri.toString());
         putIfNonNull(values, Downloads.Impl.COLUMN_TITLE, mTitle);

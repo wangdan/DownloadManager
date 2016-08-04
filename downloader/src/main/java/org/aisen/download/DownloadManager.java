@@ -137,6 +137,7 @@ public class DownloadManager {
 
     private Context mContext;
     private final DownloadController mController;
+    final int mMaxAllowed;
 
     public static synchronized void setup(Context context, boolean debug, int maxThread) {
         if (mDownloadManager == null) {
@@ -150,9 +151,10 @@ public class DownloadManager {
         return mDownloadManager;
     }
 
-    private DownloadManager(Context context, int maxThread) {
+    private DownloadManager(Context context, int maxAllowed) {
         mContext = context;
         mController = new DownloadController();
+        mMaxAllowed = maxAllowed;
     }
 
     public String generateKey(Uri uri, Uri fileUri) {

@@ -212,9 +212,13 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
 
                 setButtonProgress(downloadMsg.getCurrent(), downloadMsg.getTotal());
             }
+            else if (status == DownloadManager.STATUS_PENDING) {
+                mActionButton.setText("等待");
+
+                setButtonProgress(downloadMsg.getCurrent(), downloadMsg.getTotal());
+            }
             // 等待
-            else if (status == DownloadManager.STATUS_PENDING ||
-                    status == DownloadManager.STATUS_WAITING) {
+            else if (status == DownloadManager.STATUS_WAITING) {
                 mActionButton.setText("等待");
 
                 setButtonProgress(downloadMsg.getCurrent(), downloadMsg.getTotal());

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Max number of downloads allowed to proceed concurrently -->
-    <integer name="config_MaxConcurrentDownloadsAllowed">2</integer>
+    <integer name="config_MaxConcurrentDownloadsAllowed">1</integer>
 </resources>

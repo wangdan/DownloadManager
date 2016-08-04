@@ -79,7 +79,11 @@ public class DownloadService extends Service implements IDownloadSubject {
         mNotifier = new DownloadNotifier(this);
         mNotifier.cancelAll();
         mSystemFacade = new RealSystemFacade(this);
-        mExecutor = Utils.buildDownloadExecutor(5);
+        int maxThread = 2;
+        if (DownloadManager.getInstance() != null) {
+            maxThread = DownloadManager.getInstance().mMaxAllowed;
+        }
+        mExecutor = Utils.buildDownloadExecutor(maxThread);
 
         if (DownloadManager.getInstance() != null) {
             DownloadManager.getInstance().getController().register(this);
