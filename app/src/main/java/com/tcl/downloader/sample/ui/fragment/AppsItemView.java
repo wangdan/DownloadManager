@@ -137,7 +137,8 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
             }
             // 下载状态，暂停下载
             else if (downloadMsg.getStatus() == DownloadManager.STATUS_RUNNING ||
-                            downloadMsg.getStatus() == DownloadManager.STATUS_WAITING) {
+                            downloadMsg.getStatus() == DownloadManager.STATUS_WAITING ||
+                            downloadMsg.getStatus() == DownloadManager.STATUS_PENDING) {
                 downloadManager.pause(downloadMsg.getKey());
             }
             // 已下载状态，清除下载

@@ -6,7 +6,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -41,7 +40,7 @@ public class Utils {
         }
     }
 
-    public static ExecutorService buildDownloadExecutor(int maxThread) {
+    public static ThreadPoolExecutor buildDownloadExecutor(int maxThread) {
         final int maxConcurrent = maxThread;
 
         // Create a bounded thread pool for executing downloads; it creates
@@ -49,6 +48,7 @@ public class Utils {
         final ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 maxConcurrent, maxConcurrent, 10, TimeUnit.SECONDS,
                 new LinkedBlockingQueue<Runnable>()) {
+
             @Override
             protected void afterExecute(Runnable r, Throwable t) {
                 super.afterExecute(r, t);

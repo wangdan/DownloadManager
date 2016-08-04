@@ -13,6 +13,7 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 
+import org.aisen.download.DownloadManager;
 import org.aisen.download.DownloadThread;
 import org.aisen.download.core.Downloads.Impl;
 import org.aisen.download.Request;
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Created by wangdan on 16/7/30.
@@ -287,13 +289,16 @@ public class DownloadInfo {
      *
      * @return If actively downloading.
      */
-    public boolean startDownloadIfReady(ExecutorService executor) {
+    public boolean startDownloadIfReady(ThreadPoolExecutor executor) {
         synchronized (this) {
             final boolean isReady = isReadyToDownload();
             final boolean isActive = isActive();
             if (isReady && !isActive) {
-                if (mStatus != Impl.STATUS_RUNNING) {
-                    mStatus = Impl.STATUS_RUNNING;
+                int maxCount = DownloadManager.getInstance() != null ? DownloadManager.getInstance().getMaxAllowed() : DownloadManager.DEFAULT_MAX_ALLOWED;
+                boolean canRun = executor.getActiveCount() < maxCount;// 如果已经达到了MAC THREAD，就暂时先等待执行
+                int status = canRun ? Impl.STATUS_RUNNING : Impl.STATUS_PENDING;
+                if (mStatus != status) {
+                    mStatus = status;
                     ContentValues values = new ContentValues();
                     values.put(Impl.COLUMN_STATUS, mStatus);
                     mDbHelper.update(mKey, values);

@@ -27,8 +27,8 @@ import org.aisen.download.utils.Utils;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -53,7 +53,7 @@ public class DownloadService extends Service implements IDownloadSubject {
     private DBHelper mDbHelper;
     private DownloadNotifier mNotifier;
     private RealSystemFacade mSystemFacade;
-    private ExecutorService mExecutor;
+    private ThreadPoolExecutor mExecutor;
     private CoreThread mCoreThread;
 
     private final Map<String, DownloadInfo> mDownloads = Maps.newHashMap();
@@ -79,9 +79,9 @@ public class DownloadService extends Service implements IDownloadSubject {
         mNotifier = new DownloadNotifier(this);
         mNotifier.cancelAll();
         mSystemFacade = new RealSystemFacade(this);
-        int maxThread = 2;
+        int maxThread = DownloadManager.DEFAULT_MAX_ALLOWED;
         if (DownloadManager.getInstance() != null) {
-            maxThread = DownloadManager.getInstance().mMaxAllowed;
+            maxThread = DownloadManager.getInstance().getMaxAllowed();
         }
         mExecutor = Utils.buildDownloadExecutor(maxThread);
 
@@ -281,6 +281,15 @@ public class DownloadService extends Service implements IDownloadSubject {
                         mDownloads.remove(key);
                         mDbHelper.remove(key);
 
+                        // 删除临时文件
+                        try {
+                            File temp = info.getTempFile();
+                            if (temp.exists()) {
+                                temp.delete();
+                            }
+                        } catch (IOException ignore) {
+                        }
+
                         if (info.mStatus == Downloads.Impl.STATUS_SUCCESS) {
                             Uri uri = Uri.parse(info.mFilePath);
                             if (ContentResolver.SCHEME_FILE.equals(uri.getScheme())) {
@@ -288,14 +297,6 @@ public class DownloadService extends Service implements IDownloadSubject {
                                 if (file.exists()) {
                                     file.delete();
                                 }
-                                try {
-                                    File temp = info.getTempFile();
-                                    if (temp.exists()) {
-                                        temp.delete();
-                                    }
-                                } catch (IOException ignore) {
-                                }
-
                             }
                         }
                         else if (info.isActive()) {

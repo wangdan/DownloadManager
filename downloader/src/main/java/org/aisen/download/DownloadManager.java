@@ -133,11 +133,13 @@ public class DownloadManager {
      */
     public final static int ERROR_BLOCKED = 1010;
 
+    public static final int DEFAULT_MAX_ALLOWED = 3;
+
     private static DownloadManager mDownloadManager;
 
     private Context mContext;
     private final DownloadController mController;
-    final int mMaxAllowed;
+    private final int mMaxAllowed;
 
     public static synchronized void setup(Context context, boolean debug, int maxThread) {
         if (mDownloadManager == null) {
@@ -239,6 +241,10 @@ public class DownloadManager {
 
     public DownloadController getController() {
         return mController;
+    }
+
+    public int getMaxAllowed() {
+        return mMaxAllowed;
     }
 
     static abstract class Action {

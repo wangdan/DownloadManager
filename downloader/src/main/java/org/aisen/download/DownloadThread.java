@@ -180,6 +180,17 @@ public class DownloadThread implements Runnable {
 //        }
 
         try {
+            synchronized (mInfo) {
+                if (mInfo.mStatus != Downloads.Impl.STATUS_RUNNING) {
+                    mInfo.mStatus = Downloads.Impl.STATUS_RUNNING;
+                    ContentValues values = new ContentValues();
+                    values.put(Downloads.Impl.COLUMN_STATUS, mInfo.mStatus);
+                    mDbHelper.update(mInfo.mKey, values);
+
+                    publishDownload();
+                }
+            }
+
             logDebug("Starting");
 
             // Remember which network this download started on; used to
