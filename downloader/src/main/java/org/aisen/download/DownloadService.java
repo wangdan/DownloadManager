@@ -242,6 +242,9 @@ public class DownloadService extends Service implements IDownloadSubject {
                     }
                 }
 
+                // 文件已存在
+
+
                 if (!mDownloads.containsKey(key) || mDownloads.get(key) != info) {
                     mDownloads.put(key, info);
                 }

@@ -12,6 +12,8 @@ import android.text.TextUtils;
 import org.aisen.download.core.Downloads;
 import org.aisen.download.utils.Utils;
 
+import java.io.File;
+
 /**
  * This class contains all the information necessary to request a new download. The URI is the
  * only required parameter.
@@ -194,6 +196,13 @@ public class Request {
         values.put(Downloads.Impl.COLUMN_VISIBILITY, mNotificationVisibility);
         values.put(Downloads.Impl.COLUMN_ALLOWED_NETWORK_TYPES, mAllowedNetworkTypes);
         values.put(Downloads.Impl.COLUMN_ALLOW_ROAMING, mRoamingAllowed);
+        try {
+            File file = new File(mFileUri.getPath());
+            if (file.exists()) {
+                values.put(Downloads.Impl.COLUMN_STATUS, Downloads.Impl.STATUS_SUCCESS);
+            }
+        } catch (Exception ignore) {
+        }
 
         return values;
     }

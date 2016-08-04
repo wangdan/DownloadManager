@@ -172,15 +172,21 @@ public class DownloadThread implements Runnable {
             return;
         }
 
-        // FIXME 如果已经下载了，直接提示
-//        if (DownloadInfo.queryDownloadStatus(mContext.getContentResolver(), mId)
-//                == Downloads.Impl.STATUS_SUCCESS) {
-//            logDebug("Already finished; skipping");
-//            return;
-//        }
-
         try {
             synchronized (mInfo) {
+                try {
+                    File file = new File(Uri.parse(mInfo.mFilePath).getPath());
+                    if (file.exists()) {
+                        mInfo.mCurrentBytes = file.length();
+                        mInfo.mTotalBytes = file.length();
+                        mInfo.mStatus = Downloads.Impl.STATUS_SUCCESS;
+
+                        publishDownload();
+                        return;
+                    }
+                } catch (Exception ignore) {
+                }
+
                 if (mInfo.mStatus != Downloads.Impl.STATUS_RUNNING) {
                     mInfo.mStatus = Downloads.Impl.STATUS_RUNNING;
                     ContentValues values = new ContentValues();
