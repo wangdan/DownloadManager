@@ -60,6 +60,10 @@ public class DBHelper extends SQLiteOpenHelper {
 
     }
 
+    public Cursor query(String selection, String[] selectionArgs, String orderBy) {
+        return getReadableDatabase().query(DB_TABLE, columns(), selection, selectionArgs, null, null, orderBy);
+    }
+
     public Cursor query(String key) {
         String selection = String.format(" %s = ? ", Downloads.Impl.COLUMN_KEY);
         String[] selectionArgs = new String[]{ key };

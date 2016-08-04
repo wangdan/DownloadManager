@@ -343,7 +343,7 @@ public class DownloadInfo {
     /**
      * Returns whether this download should be enqueued.
      */
-    private boolean isReadyToDownload() {
+    public boolean isReadyToDownload() {
         if (mControl == Downloads.Impl.CONTROL_PAUSED) {
             // the download is paused, so it's not going to start
             return false;

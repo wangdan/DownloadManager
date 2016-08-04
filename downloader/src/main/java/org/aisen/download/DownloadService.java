@@ -38,7 +38,15 @@ public class DownloadService extends Service implements IDownloadSubject {
 
     private static final String TAG = Constants.TAG + "_DownloadService";
 
+    public static final String ACTION_RETRY = "org.aisen.download.ACTION_RETRY";
+
     private static LinkedBlockingQueue<DownloadManager.Action> mRequestQueue = new LinkedBlockingQueue<>();
+
+    public static void retryAction(Context context) {
+        Intent intent = new Intent(context, DownloadService.class);
+        intent.setAction(DownloadService.ACTION_RETRY);
+        context.startService(intent);
+    }
 
     final static void runAction(Context context, DownloadManager.Action action) {
         context.startService(new Intent(context, DownloadService.class));
@@ -55,6 +63,7 @@ public class DownloadService extends Service implements IDownloadSubject {
     private RealSystemFacade mSystemFacade;
     private ThreadPoolExecutor mExecutor;
     private CoreThread mCoreThread;
+    private RetryThread mRetryThread;
 
     private final Map<String, DownloadInfo> mDownloads = Maps.newHashMap();
 
@@ -104,6 +113,17 @@ public class DownloadService extends Service implements IDownloadSubject {
             }
         }
 
+        if (intent != null && ACTION_RETRY.equals(intent.getAction())) {
+            DLogger.d(TAG, "ACTION_RETRY");
+
+            synchronized (mLock) {
+                if (mRetryThread == null) {
+                    mRetryThread = new RetryThread();
+                    mRetryThread.start();
+                }
+            }
+        }
+
         return returnValue;
     }
 
@@ -131,6 +151,44 @@ public class DownloadService extends Service implements IDownloadSubject {
         else {
             mHandle.sendEmptyMessage(0);
         }
+    }
+
+    class RetryThread extends Thread {
+
+        @Override
+        public void run() {
+            super.run();
+
+            try {
+                String selection = String.format(" %s >= '194' AND %s <= '196' ", Downloads.Impl.COLUMN_STATUS, Downloads.Impl.COLUMN_STATUS);
+
+                Cursor cursor = mDbHelper.query(selection, null, Downloads.Impl.COLUMN_LAST_MODIFICATION + " desc ");
+                // 已存在数据
+                if (cursor.moveToFirst()) {
+                    do {
+                        final DownloadInfo.Reader reader = new DownloadInfo.Reader(cursor);
+                        DownloadInfo info = reader.newDownloadInfo(DownloadService.this, mSystemFacade, mNotifier, mDbHelper);
+
+                        final boolean isReady = info.isReadyToDownload();
+                        final boolean isActive = info.isActive();
+                        if (isReady && !isActive) {
+                            DLogger.d(TAG, "resumt action[%s], uri = %s, filepath = %s", info.mKey, info.mUri, info.mFilePath);
+
+                            runAction(DownloadService.this, new DownloadManager.ResumeAction(info.mKey));
+                        }
+                    } while (cursor.moveToNext());
+                }
+
+                if (cursor != null) {
+                    cursor.close();
+                }
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+
+            mRetryThread = null;
+        }
+
     }
 
     class CoreThread extends Thread {
@@ -213,15 +271,6 @@ public class DownloadService extends Service implements IDownloadSubject {
                 }
 
                 if (info == null) {
-                    // 查询状态
-//                    if (action instanceof DownloadManager.QueryAction) {
-//                        DownloadManager.QueryAction queryAction = (DownloadManager.QueryAction) action;
-//
-//                        if (queryAction.publish && DownloadManager.getInstance() != null) {
-//                            DownloadManager.getInstance().getController().publishDownload(new DownloadMsg(key));
-//                        }
-//                    }
-
                     DownloadManager.getInstance().getController().publishDownload(new DownloadMsg(action.key()));
 
                     return;
@@ -330,9 +379,9 @@ public class DownloadService extends Service implements IDownloadSubject {
 
         if (mCoreThread != null) {
             mCoreThread.running = false;
-
-            mCoreThread = null;
         }
+        mCoreThread = null;
+        mRetryThread = null;
 
         mRequestQueue.clear();
 

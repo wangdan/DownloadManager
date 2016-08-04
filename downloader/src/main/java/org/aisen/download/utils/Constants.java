@@ -1,8 +1,5 @@
 package org.aisen.download.utils;
 
-import android.os.Build;
-import android.text.TextUtils;
-
 /**
  * Created by wangdan on 16/7/30.
  */
@@ -10,66 +7,10 @@ public final class Constants {
 
     public static final String TAG = "DownloadManager";
 
-    /** The default user agent used for downloads */
-    public static final String DEFAULT_USER_AGENT;
+    public static final String TEMP_SUFFIX = ".atmp";
 
-    static {
-        final StringBuilder builder = new StringBuilder();
-
-        final boolean validRelease = !TextUtils.isEmpty(Build.VERSION.RELEASE);
-        final boolean validId = !TextUtils.isEmpty(Build.ID);
-        final boolean includeModel = "REL".equals(Build.VERSION.CODENAME)
-                && !TextUtils.isEmpty(Build.MODEL);
-
-        builder.append("AndroidDownloadManager");
-        if (validRelease) {
-            builder.append("/").append(Build.VERSION.RELEASE);
-        }
-        builder.append(" (Linux; U; Android");
-        if (validRelease) {
-            builder.append(" ").append(Build.VERSION.RELEASE);
-        }
-        if (includeModel || validId) {
-            builder.append(";");
-            if (includeModel) {
-                builder.append(" ").append(Build.MODEL);
-            }
-            if (validId) {
-                builder.append(" Build/").append(Build.ID);
-            }
-        }
-        builder.append(")");
-
-        DEFAULT_USER_AGENT = builder.toString();
-    }
-
-    /**
-     * Name of directory on cache partition containing in-progress downloads.
-     */
-    public static final String DIRECTORY_CACHE_RUNNING = "partial_downloads";
-
-    /**
-     * When a number has to be appended to the filename, this string is used to separate the
-     * base filename from the sequence number
-     */
-    public static final String FILENAME_SEQUENCE_SEPARATOR = "-";
-
-    /** A magic filename that is allowed to exist within the system cache */
-    public static final String RECOVERY_DIRECTORY = "recovery";
-
-    /** The default base name for downloaded files if we can't get one at the HTTP level */
-    public static final String DEFAULT_DL_FILENAME = "downloadfile";
-
-    /** The default extension for html files if we can't get one at the HTTP level */
-    public static final String DEFAULT_DL_HTML_EXTENSION = ".html";
-
-    /** The default extension for text files if we can't get one at the HTTP level */
-    public static final String DEFAULT_DL_TEXT_EXTENSION = ".txt";
-
-    /** The default extension for binary files if we can't get one at the HTTP level */
-    public static final String DEFAULT_DL_BINARY_EXTENSION = ".bin";
-
-    public static final String TEMP_SUFFIX = ".at";
+    /** The intent that gets sent when the service must wake up for a retry */
+    public static final String ACTION_RETRY = "android.intent.action.DOWNLOAD_WAKEUP";
 
     /**
      * The maximum number of redirects.
