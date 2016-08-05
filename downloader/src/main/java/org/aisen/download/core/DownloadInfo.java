@@ -9,14 +9,13 @@ import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.Environment;
 import android.text.TextUtils;
-import android.util.Log;
+import android.util.Pair;
 
 import org.aisen.download.DownloadManager;
 import org.aisen.download.DownloadThread;
-import org.aisen.download.core.Downloads.Impl;
 import org.aisen.download.Request;
+import org.aisen.download.core.Downloads.Impl;
 import org.aisen.download.ui.DownloadNotifier;
 import org.aisen.download.ui.SizeLimitActivity;
 import org.aisen.download.utils.ConnectivityManagerUtils;
@@ -24,8 +23,11 @@ import org.aisen.download.utils.Constants;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -60,6 +62,7 @@ public class DownloadInfo {
     public String mETag;
     public String mTitle;// 通知栏标题
     public String mDescription;// 通知栏描述
+    private List<Pair<String, String>> mRequestHeaders = new ArrayList<>();// HTTP请求Headers
 
     private final Context mContext;
     private final DBHelper mDbHelper;
@@ -223,62 +226,89 @@ public class DownloadInfo {
         mContext.startActivity(intent);
     }
 
-    public Uri getAllDownloadsUri() {
-        return ContentUris.withAppendedId(Downloads.Impl.ALL_DOWNLOADS_CONTENT_URI, mId);
-    }
-
     public static class Reader {
-        private Cursor mCursor;
 
-        public Reader(Cursor cursor) {
-            mCursor = cursor;
+        public Reader() {
         }
 
-        public DownloadInfo newDownloadInfo(Context context, SystemFacade systemFacade, DownloadNotifier notifier, DBHelper dbHelper) {
+        public DownloadInfo newDownloadInfo(Context context, Cursor cursor, SystemFacade systemFacade, DownloadNotifier notifier, DBHelper dbHelper) {
             final DownloadInfo info = new DownloadInfo(context, systemFacade, notifier, dbHelper);
 
-            updateFromDatabase(info);
+            updateFromDatabase(info, cursor);
+
+            readRequestHeaders(info, dbHelper);
 
             return info;
         }
 
-        public void updateFromDatabase(DownloadInfo info) {
-            info.mId = getLong(Downloads.Impl._ID);
-            info.mKey = getString(Impl.COLUMN_KEY);
-            info.mUri = getString(Downloads.Impl.COLUMN_URI);
-            info.mFilePath = getString(Downloads.Impl._DATA);
-            info.mVisibility = getInt(Downloads.Impl.COLUMN_VISIBILITY);
+        public void updateFromDatabase(DownloadInfo info, Cursor cursor) {
+            info.mId = getLong(Downloads.Impl._ID, cursor);
+            info.mKey = getString(Impl.COLUMN_KEY, cursor);
+            info.mUri = getString(Downloads.Impl.COLUMN_URI, cursor);
+            info.mFilePath = getString(Downloads.Impl._DATA, cursor);
+            info.mVisibility = getInt(Downloads.Impl.COLUMN_VISIBILITY, cursor);
             synchronized (this) {
-                info.mControl = getInt(Downloads.Impl.COLUMN_CONTROL);
+                info.mControl = getInt(Downloads.Impl.COLUMN_CONTROL, cursor);
             }
-            info.mStatus = getInt(Downloads.Impl.COLUMN_STATUS);
+            info.mStatus = getInt(Downloads.Impl.COLUMN_STATUS, cursor);
             // 新增错误原因
-            info.mErrorMsg = getString(Downloads.Impl.COLUMN_ERROR_MSG);
-            info.mLastMod = getLong(Downloads.Impl.COLUMN_LAST_MODIFICATION);
-            info.mNumFailed = getInt(Downloads.Impl.COLUMN_FAILED_CONNECTIONS);
-            info.mTotalBytes = getLong(Downloads.Impl.COLUMN_TOTAL_BYTES);
-            info.mCurrentBytes = getLong(Downloads.Impl.COLUMN_CURRENT_BYTES);
-            info.mAllowedNetworkTypes = getInt(Downloads.Impl.COLUMN_ALLOWED_NETWORK_TYPES);
-            info.mAllowRoaming = getInt(Downloads.Impl.COLUMN_ALLOW_ROAMING) != 0;
+            info.mErrorMsg = getString(Downloads.Impl.COLUMN_ERROR_MSG, cursor);
+            info.mLastMod = getLong(Downloads.Impl.COLUMN_LAST_MODIFICATION, cursor);
+            info.mNumFailed = getInt(Downloads.Impl.COLUMN_FAILED_CONNECTIONS, cursor);
+            info.mTotalBytes = getLong(Downloads.Impl.COLUMN_TOTAL_BYTES, cursor);
+            info.mCurrentBytes = getLong(Downloads.Impl.COLUMN_CURRENT_BYTES, cursor);
+            info.mAllowedNetworkTypes = getInt(Downloads.Impl.COLUMN_ALLOWED_NETWORK_TYPES, cursor);
+            info.mAllowRoaming = getInt(Downloads.Impl.COLUMN_ALLOW_ROAMING, cursor) != 0;
             info.mBypassRecommendedSizeLimit =
-                    getInt(Downloads.Impl.COLUMN_BYPASS_RECOMMENDED_SIZE_LIMIT);
-            info.mETag = getString(Constants.ETAG);
-            info.mTitle = getString(Downloads.Impl.COLUMN_TITLE);
-            info.mDescription = getString(Downloads.Impl.COLUMN_DESCRIPTION);
+                    getInt(Downloads.Impl.COLUMN_BYPASS_RECOMMENDED_SIZE_LIMIT, cursor);
+            info.mETag = getString(Constants.ETAG, cursor);
+            info.mTitle = getString(Downloads.Impl.COLUMN_TITLE, cursor);
+            info.mDescription = getString(Downloads.Impl.COLUMN_DESCRIPTION, cursor);
+//            info.mCookies = getString(Downloads.Impl.COLUMN_COOKIE_DATA, cursor);
+//            info.mReferer = getString(Downloads.Impl.COLUMN_REFERER, cursor);
         }
 
-        private String getString(String column) {
-            int index = mCursor.getColumnIndexOrThrow(column);
-            String s = mCursor.getString(index);
+        public void readRequestHeaders(DownloadInfo info, DBHelper dbHelper) {
+            info.mRequestHeaders.clear();
+
+            Cursor cursor = dbHelper.queryRequestHeaders(info.mId);
+            try {
+                int headerIndex =
+                        cursor.getColumnIndexOrThrow(Downloads.Impl.RequestHeaders.COLUMN_HEADER);
+                int valueIndex =
+                        cursor.getColumnIndexOrThrow(Downloads.Impl.RequestHeaders.COLUMN_VALUE);
+
+                for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+                    addHeader(info, cursor.getString(headerIndex), cursor.getString(valueIndex));
+                }
+            } finally {
+                cursor.close();
+            }
+
+//            if (info.mCookies != null) {
+//                addHeader(info, "Cookie", info.mCookies);
+//            }
+//            if (info.mReferer != null) {
+//                addHeader(info, "Referer", info.mReferer);
+//            }
+        }
+
+        private void addHeader(DownloadInfo info, String header, String value) {
+            info.mRequestHeaders.add(Pair.create(header, value));
+        }
+
+        private String getString(String column, Cursor cursor) {
+            int index = cursor.getColumnIndexOrThrow(column);
+            String s = cursor.getString(index);
             return (TextUtils.isEmpty(s)) ? null : s;
         }
 
-        private Integer getInt(String column) {
-            return mCursor.getInt(mCursor.getColumnIndexOrThrow(column));
+        private Integer getInt(String column, Cursor cursor) {
+            return cursor.getInt(cursor.getColumnIndexOrThrow(column));
         }
 
-        private Long getLong(String column) {
-            return mCursor.getLong(mCursor.getColumnIndexOrThrow(column));
+        private Long getLong(String column, Cursor cursor) {
+            return cursor.getLong(cursor.getColumnIndexOrThrow(column));
         }
     }
 
@@ -367,17 +397,6 @@ public class DownloadInfo {
                 // download was waiting for a delayed restart
                 final long now = mSystemFacade.currentTimeMillis();
                 return restartTime(now) <= now;
-            case Downloads.Impl.STATUS_DEVICE_NOT_FOUND_ERROR:
-                // is the media mounted?
-                final Uri uri = Uri.parse(mUri);
-                if (ContentResolver.SCHEME_FILE.equals(uri.getScheme())) {
-                    final File file = new File(uri.getPath());
-                    return Environment.MEDIA_MOUNTED
-                            .equals(Environment.getExternalStorageState(file));
-                } else {
-                    Log.w("DownloadInfo", "Expected file URI on external storage: " + mUri);
-                    return false;
-                }
             case Downloads.Impl.STATUS_INSUFFICIENT_SPACE_ERROR:
                 // avoids repetition of retrying download
                 return false;
@@ -395,6 +414,14 @@ public class DownloadInfo {
         else {
             throw new IOException("Invalid file : " + fileUri.toString());
         }
+    }
+
+    public Collection<Pair<String, String>> getHeaders() {
+        return Collections.unmodifiableList(mRequestHeaders);
+    }
+
+    public Uri getAllDownloadsUri() {
+        return ContentUris.withAppendedId(Downloads.Impl.ALL_DOWNLOADS_CONTENT_URI, mId);
     }
 
 }

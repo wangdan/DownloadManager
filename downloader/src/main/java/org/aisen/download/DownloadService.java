@@ -166,8 +166,8 @@ public class DownloadService extends Service implements IDownloadSubject {
                 // 已存在数据
                 if (cursor.moveToFirst()) {
                     do {
-                        final DownloadInfo.Reader reader = new DownloadInfo.Reader(cursor);
-                        DownloadInfo info = reader.newDownloadInfo(DownloadService.this, mSystemFacade, mNotifier, mDbHelper);
+                        final DownloadInfo.Reader reader = new DownloadInfo.Reader();
+                        DownloadInfo info = reader.newDownloadInfo(DownloadService.this, cursor, mSystemFacade, mNotifier, mDbHelper);
 
                         final boolean isReady = info.isReadyToDownload();
                         final boolean isActive = info.isActive();
@@ -229,8 +229,8 @@ public class DownloadService extends Service implements IDownloadSubject {
             try {
                 // 已存在数据
                 if (cursor.moveToFirst()) {
-                    final DownloadInfo.Reader reader = new DownloadInfo.Reader(cursor);
-                    DownloadInfo info = reader.newDownloadInfo(DownloadService.this, mSystemFacade, mNotifier, mDbHelper);
+                    final DownloadInfo.Reader reader = new DownloadInfo.Reader();
+                    DownloadInfo info = reader.newDownloadInfo(DownloadService.this, cursor, mSystemFacade, mNotifier, mDbHelper);
 
                     return info;
                 }

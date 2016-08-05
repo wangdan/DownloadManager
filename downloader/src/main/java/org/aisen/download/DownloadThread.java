@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Process;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.Pair;
 
 import org.aisen.download.core.DBHelper;
 import org.aisen.download.core.DownloadInfo;
@@ -635,10 +636,10 @@ public class DownloadThread implements Runnable {
      * Add custom headers for this download to the HTTP request.
      */
     private void addRequestHeaders(HttpURLConnection conn, boolean resuming) throws StopRequestException {
-//        for (Pair<String, String> header : mInfo.getHeaders()) {
-//            conn.addRequestProperty(header.first, header.second);
-//        }
-//
+        for (Pair<String, String> header : mInfo.getHeaders()) {
+            conn.addRequestProperty(header.first, header.second);
+        }
+
 //        // Only splice in user agent when not already defined
 //        if (conn.getRequestProperty("User-Agent") == null) {
 //            conn.addRequestProperty("User-Agent", mInfo.getUserAgent());
@@ -657,7 +658,7 @@ public class DownloadThread implements Runnable {
                 conn.addRequestProperty("If-Match", mInfo.mETag);
             }
 
-            // add Rang
+            // 断点续传
             conn.addRequestProperty("Range", "bytes=" + mInfo.mCurrentBytes + "-");
         }
     }

@@ -130,9 +130,6 @@ public final class DownloadMsg implements Serializable {
             case Downloads.Impl.STATUS_INSUFFICIENT_SPACE_ERROR:
                 return DownloadManager.ERROR_INSUFFICIENT_SPACE;
 
-            case Downloads.Impl.STATUS_DEVICE_NOT_FOUND_ERROR:
-                return DownloadManager.ERROR_DEVICE_NOT_FOUND;
-
             case Downloads.Impl.STATUS_CANNOT_RESUME:
                 return DownloadManager.ERROR_CANNOT_RESUME;
 

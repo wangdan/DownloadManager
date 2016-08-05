@@ -209,6 +209,23 @@ public final class Downloads {
         public static final String COLUMN_FAILED_CONNECTIONS = "numfailed";
 
         /**
+         * The name of the column contain the values of the cookie to be used for
+         * the download. This is used directly as the value for the Cookie: HTTP
+         * header that gets sent with the request.
+         * <P>Type: TEXT</P>
+         * <P>Owner can Init</P>
+         */
+//        public static final String COLUMN_COOKIE_DATA = "cookiedata";
+
+        /**
+         * The name of the column containing the referer (sic) that the initiating
+         * application wants the download manager to use for this download.
+         * <P>Type: TEXT</P>
+         * <P>Owner can Init</P>
+         */
+//        public static final String COLUMN_REFERER = "referer";
+
+        /**
          * 默认值
          */
         public static final int CONTROL_NONE = 0;
@@ -344,13 +361,6 @@ public final class Downloads {
         public static final int STATUS_INSUFFICIENT_SPACE_ERROR = 198;
 
         /**
-         * This download couldn't be completed because no external storage
-         * device was found.  Typically, this is because the SD card is not
-         * mounted.
-         */
-        public static final int STATUS_DEVICE_NOT_FOUND_ERROR = 199;
-
-        /**
          * This download has successfully completed.
          * Warning: there might be other status values that indicate success
          * in the future.
@@ -419,7 +429,7 @@ public final class Downloads {
          * This download couldn't be completed because of a storage issue.
          * Typically, that's because the filesystem is missing or full.
          * Use the more specific {@link #STATUS_INSUFFICIENT_SPACE_ERROR}
-         * and {@link #STATUS_DEVICE_NOT_FOUND_ERROR} when appropriate.
+         * when appropriate.
          */
         public static final int STATUS_FILE_ERROR = 492;
 
@@ -465,7 +475,6 @@ public final class Downloads {
         @Deprecated
         public static final int STATUS_BLOCKED = 498;
 
-        /** {@hide} */
         public static String statusToString(int status) {
             switch (status) {
                 case STATUS_PENDING: return "PENDING";
@@ -475,7 +484,6 @@ public final class Downloads {
                 case STATUS_WAITING_FOR_NETWORK: return "WAITING_FOR_NETWORK";
                 case STATUS_QUEUED_FOR_WIFI: return "QUEUED_FOR_WIFI";
                 case STATUS_INSUFFICIENT_SPACE_ERROR: return "INSUFFICIENT_SPACE_ERROR";
-                case STATUS_DEVICE_NOT_FOUND_ERROR: return "DEVICE_NOT_FOUND_ERROR";
                 case STATUS_SUCCESS: return "SUCCESS";
                 case STATUS_BAD_REQUEST: return "BAD_REQUEST";
                 case STATUS_NOT_ACCEPTABLE: return "NOT_ACCEPTABLE";

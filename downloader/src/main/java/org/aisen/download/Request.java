@@ -8,11 +8,14 @@ import android.content.ContentValues;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.text.TextUtils;
+import android.util.Pair;
 
 import org.aisen.download.core.Downloads;
 import org.aisen.download.utils.Utils;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class contains all the information necessary to request a new download. The URI is the
@@ -73,6 +76,8 @@ public class Request {
     private CharSequence mDescription;
     private int mAllowedNetworkTypes = ~0; // default to all network types allowed
     private boolean mRoamingAllowed = true;
+
+    private List<Pair<String, String>> mRequestHeaders = new ArrayList<Pair<String, String>>();
 
     public Request(Uri uri, Uri fileUri) {
         this(null, uri, fileUri);
@@ -182,13 +187,37 @@ public class Request {
     }
 
     /**
+     * Add an HTTP header to be included with the download request.  The header will be added to
+     * the end of the list.
+     * @param header HTTP header name
+     * @param value header value
+     * @return this object
+     * @see <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2">HTTP/1.1
+     *      Message Headers</a>
+     */
+    public Request addRequestHeader(String header, String value) {
+        if (header == null) {
+            return this;
+        }
+        if (header.contains(":")) {
+            return this;
+        }
+        if (value == null) {
+            value = "";
+        }
+
+        mRequestHeaders.add(Pair.create(header, value));
+
+        return this;
+    }
+
+    /**
      * @return ContentValues to be passed to DownloadProvider.insert()
      */
     ContentValues toContentValues() {
         ContentValues values = new ContentValues();
 
         values.put(Downloads.Impl.COLUMN_KEY, mKey);
-        values.put(Downloads.Impl.COLUMN_STATUS, Downloads.Impl.STATUS_PENDING);
         values.put(Downloads.Impl.COLUMN_URI, mUri.toString());
         values.put(Downloads.Impl._DATA, mFileUri.toString());
         putIfNonNull(values, Downloads.Impl.COLUMN_TITLE, mTitle);
@@ -201,7 +230,15 @@ public class Request {
             if (file.exists()) {
                 values.put(Downloads.Impl.COLUMN_STATUS, Downloads.Impl.STATUS_SUCCESS);
             }
+            else {
+                values.put(Downloads.Impl.COLUMN_STATUS, Downloads.Impl.STATUS_PENDING);
+            }
         } catch (Exception ignore) {
+            values.put(Downloads.Impl.COLUMN_STATUS, Downloads.Impl.STATUS_PENDING);
+        }
+
+        if (!mRequestHeaders.isEmpty()) {
+            encodeHttpHeaders(values);
         }
 
         return values;
@@ -213,8 +250,18 @@ public class Request {
         }
     }
 
+    private void encodeHttpHeaders(ContentValues values) {
+        int index = 0;
+        for (Pair<String, String> header : mRequestHeaders) {
+            String headerString = header.first + ": " + header.second;
+            values.put(Downloads.Impl.RequestHeaders.INSERT_KEY_PREFIX + index, headerString);
+            index++;
+        }
+    }
+
     @Override
     public String toString() {
         return String.format("URI[%s], FilePath[%s]", mUri.toString(), mFileUri.toString());
     }
+
 }

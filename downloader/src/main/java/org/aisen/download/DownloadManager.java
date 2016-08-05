@@ -81,7 +81,7 @@ public class DownloadManager {
     /**
      * a storage issue arises which doesn't fit under any
      * other error code. Use the more specific {@link #ERROR_INSUFFICIENT_SPACE} and
-     * {@link #ERROR_DEVICE_NOT_FOUND} when appropriate.
+     * when appropriate.
      */
     public final static int ERROR_FILE_ERROR = 1001;
 
@@ -107,12 +107,6 @@ public class DownloadManager {
      * this is because the SD card is full.
      */
     public final static int ERROR_INSUFFICIENT_SPACE = 1006;
-
-    /**
-     * no external storage device was found. Typically,
-     * this is because the SD card is not mounted.
-     */
-    public final static int ERROR_DEVICE_NOT_FOUND = 1007;
 
     /**
      * some possibly transient error occurred but we can't

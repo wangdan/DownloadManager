@@ -129,6 +129,8 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
                 Request request = new Request(uri, fileUri);
                 request.setTitle(mApp.getName());
                 request.setDescription(mApp.getDescription());
+                request.addRequestHeader("header01", "value01");
+                request.addRequestHeader("header02", "value02");
                 request.setNotificationVisibility(Request.VISIBILITY_VISIBLE);
                 DownloadManager.getInstance().enqueue(request);
             }
