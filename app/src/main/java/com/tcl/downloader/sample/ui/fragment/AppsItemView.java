@@ -128,6 +128,7 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
                 Uri fileUri = downloadFileURI();
                 Request request = new Request(uri, fileUri);
                 request.setTitle(mApp.getName());
+                request.setAllowedNetworkTypes(Request.NETWORK_WIFI);
                 request.setDescription(mApp.getDescription());
                 request.addRequestHeader("header01", "value01");
                 request.addRequestHeader("header02", "value02");
@@ -179,7 +180,7 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
     @Override
     public Uri downloadFileURI() {
         if (mApp != null) {
-            return Uri.fromFile(new File(SystemUtils.getSdcardPath() + "/" + mApp.getName() +  "123.apk"));
+            return Uri.fromFile(new File(SystemUtils.getSdcardPath() + "/" + mApp.getName() +  ".apk"));
         }
 
         return null;

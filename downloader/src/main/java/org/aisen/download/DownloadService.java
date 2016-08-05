@@ -49,23 +49,34 @@ public class DownloadService extends Service implements IDownloadSubject {
     }
 
     final static void runAction(Context context, DownloadManager.Action action) {
-        context.startService(new Intent(context, DownloadService.class));
+        synchronized (mNoneDownloads) {
+            if (action instanceof DownloadManager.QueryAction && mNoneDownloads.containsKey(action.key())) {
+                DownloadMsg downloadMsg = mNoneDownloads.get(action.key());
 
-        synchronized (mRequestQueue) {
-            mRequestQueue.add(action);
+                if (DownloadManager.getInstance() != null) {
+                    DownloadManager.getInstance().getController().publishDownload(downloadMsg);
+                }
+            }
+            else {
+                context.startService(new Intent(context, DownloadService.class));
+
+                mRequestQueue.add(action);
+            }
         }
     }
 
     private final Object mLock = new Object();
 
+    private static final Map<String, DownloadInfo> mDownloads = Maps.newHashMap();
+    private static final Map<String, DownloadMsg> mNoneDownloads = Maps.newHashMap();// 优化查询问题
+
     private DBHelper mDbHelper;
     private DownloadNotifier mNotifier;
     private RealSystemFacade mSystemFacade;
+
     private ThreadPoolExecutor mExecutor;
     private CoreThread mCoreThread;
     private RetryThread mRetryThread;
-
-    private final Map<String, DownloadInfo> mDownloads = Maps.newHashMap();
 
     private Handler mHandle = new Handler(Looper.getMainLooper()) {
 
@@ -208,6 +219,8 @@ public class DownloadService extends Service implements IDownloadSubject {
 
                     if (action != null) {
                         synchronized (mDownloads) {
+                            mNoneDownloads.remove(action.key());
+
                             runAction(action);
                         }
                     }
@@ -262,6 +275,8 @@ public class DownloadService extends Service implements IDownloadSubject {
 
                         mDownloads.remove(key);
 
+                        mNoneDownloads.remove(key);
+
                         continue;
                     }
                 }
@@ -282,7 +297,11 @@ public class DownloadService extends Service implements IDownloadSubject {
                 }
 
                 if (info == null) {
-                    DownloadManager.getInstance().getController().publishDownload(new DownloadMsg(action.key()));
+                    DownloadMsg downloadMsg = new DownloadMsg(action.key());
+
+                    mNoneDownloads.put(key, downloadMsg);
+
+                    DownloadManager.getInstance().getController().publishDownload(downloadMsg);
 
                     return;
                 }
@@ -297,6 +316,8 @@ public class DownloadService extends Service implements IDownloadSubject {
 
                             mDownloads.remove(key);
 
+                            mNoneDownloads.remove(key);
+
                             continue;
                         }
                     }
@@ -307,6 +328,8 @@ public class DownloadService extends Service implements IDownloadSubject {
 
                 if (!mDownloads.containsKey(key) || mDownloads.get(key) != info) {
                     mDownloads.put(key, info);
+
+                    mNoneDownloads.remove(key);
                 }
 
                 synchronized (info) {
@@ -333,16 +356,12 @@ public class DownloadService extends Service implements IDownloadSubject {
                     }
                     // 查询状态
                     else if (action instanceof DownloadManager.QueryAction) {
-                        DownloadManager.QueryAction queryAction = (DownloadManager.QueryAction) action;
-
-                        if (queryAction.publish && DownloadManager.getInstance() != null) {
-                            DownloadManager.getInstance().getController().publishDownload(info);
-                        }
                     }
                     // 删除下载
                     else if (action instanceof DownloadManager.RemoveAction) {
                         mDownloads.remove(key);
                         mDbHelper.remove(key);
+                        mNoneDownloads.remove(key);
 
                         // 删除临时文件
                         try {
