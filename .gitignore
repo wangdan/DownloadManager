@@ -8,7 +8,5 @@
 /build
 /captures
 .gitignore
-build.gradle
-libs/
+/build.gradle
 proguard-rules.pro
-src/
