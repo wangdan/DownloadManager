@@ -20,12 +20,13 @@ import org.aisen.android.ui.fragment.itemview.IItemViewCreator;
 import org.aisen.download.DownloadManager;
 import org.aisen.download.DownloadProxy;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * Created by wangdan on 16/5/13.
  */
-public class AppsListFragment extends ARecycleViewFragment<AppBean, AppBeans> {
+public class AppsListFragment extends ARecycleViewFragment<AppBean, AppBeans, Serializable> {
 
     public static AppsListFragment newInstance(int type) {
         AppsListFragment fragment = new AppsListFragment();

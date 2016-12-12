@@ -30,7 +30,9 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     // library
-    compile 'org.aisen.android:aisen:1.0.1@aar'
+    compile('org.aisen.android:aisen:2.1.2-SNAPSHOT@aar') {
+        changing = true
+    }
     compile 'com.alibaba:fastjson:1.2.6'
     compile 'com.android.support:appcompat-v7:23.2.1'
     compile 'com.android.support:design:23.2.1'

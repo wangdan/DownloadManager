@@ -7,10 +7,25 @@ import android.net.Uri;
  */
 public interface IDownloadObserver {
 
+    /**
+     * 下载地址
+     *
+     * @return
+     */
     Uri downloadURI();
 
+    /**
+     * 下载文件地址
+     *
+     * @return
+     */
     Uri downloadFileURI();
 
+    /**
+     * 下载状态广播
+     *
+     * @param downloadMsg
+     */
     void onPublish(DownloadMsg downloadMsg);
 
 }

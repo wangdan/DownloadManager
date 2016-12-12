@@ -1,1 +1,1 @@
-include ':app', ':library', ':downloader'
+include ':app', ':library', ':downloader', ':aisen_downloader'

@@ -1,7 +1,7 @@
 package com.tcl.downloader.sample.ui.fragment;
 
+import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.net.Uri;
 import android.text.TextUtils;
@@ -68,7 +68,7 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
     private AppBean mApp;
     private DownloadMsg downloadMsg;
 
-    public AppsItemView(Context context, View itemView, IDownloadSubject proxy) {
+    public AppsItemView(Activity context, View itemView, IDownloadSubject proxy) {
         super(context, itemView);
 
         this.mProxy = proxy;

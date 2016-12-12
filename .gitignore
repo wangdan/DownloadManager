@@ -10,3 +10,4 @@
 .gitignore
 /build.gradle
 proguard-rules.pro
+src/main/res/drawable/
