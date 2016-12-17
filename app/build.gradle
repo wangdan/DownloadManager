@@ -28,7 +28,7 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     // library
     compile('org.aisen.android:aisen:2.1.2-SNAPSHOT@aar') {
         changing = true
@@ -39,4 +39,5 @@ dependencies {
     compile 'com.squareup.okhttp:okhttp:2.6.0'
     compile 'com.android.support:cardview-v7:23.2.1'
     compile project(':downloader')
+    compile project(':aisen_downloader')
 }

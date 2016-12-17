@@ -4,6 +4,7 @@ import org.aisen.android.common.context.GlobalContext;
 import org.aisen.android.common.utils.Logger;
 import org.aisen.android.component.bitmaploader.BitmapLoader;
 import org.aisen.download.DownloadManager;
+import org.aiwen.downloader.Hawk;
 
 /**
  * Created by wangdan on 16/5/7.
