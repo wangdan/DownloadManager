@@ -1,5 +1,7 @@
 package org.aiwen.downloader;
 
+import org.aiwen.downloader.utils.Constants;
+
 import java.io.OutputStream;
 
 /**
@@ -7,6 +9,8 @@ import java.io.OutputStream;
  */
 
 public interface IDownloader {
+
+    String TAG = Constants.TAG + "_Downloader";
 
     void download(Request request) throws DownloadException;
 

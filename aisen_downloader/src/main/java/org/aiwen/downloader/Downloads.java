@@ -169,6 +169,17 @@ final class Downloads {
          */
         public static final int STATUS_FILE_ERROR = 492;
 
+        /**
+         * Returns whether the status is a success (i.e. 2xx).
+         */
+        public static boolean isStatusSuccess(int status) {
+            return (status >= 200 && status < 300);
+        }
+
+        public static boolean isStatusRunning(int status) {
+            return status == STATUS_PENDING || status == STATUS_RUNNING;
+        }
+
     }
 
 }

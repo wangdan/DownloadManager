@@ -67,7 +67,7 @@ public class Hawk {
     }
 
     IDownloader createDownloader(Request request) {
-        return new OkHttpDownloader2();
+        return new OkHttpDownloader();
     }
 
     /**

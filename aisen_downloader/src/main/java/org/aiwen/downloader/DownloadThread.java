@@ -30,17 +30,13 @@ public class DownloadThread implements Runnable {
 
     @Override
     public void run() {
-        mRequest.downloadInfo.status = Downloads.Status.STATUS_RUNNING;
-
         try {
             mDownloader.download(mRequest);
         } catch (DownloadException e) {
             e.printStackTrace();
         }
 
-        if (mService.lastStartId == mStartId) {
-            mService.stopSelfResult(mStartId);
-        }
+        mService.stopIfNeed(mStartId);
     }
 
 }

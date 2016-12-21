@@ -13,11 +13,13 @@ public final class Request {
 
     long id;// DB中的ID
 
-    final String key;// 每一个Request唯一Key
+    public final String key;// 每一个Request唯一Key
 
     Uri uri;// 下载请求的URI
 
     Uri fileUri;// 文件保存路径
+
+    Trace trace;
 
     final DownloadInfo downloadInfo;
 
