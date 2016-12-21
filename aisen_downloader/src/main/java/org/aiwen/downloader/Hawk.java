@@ -1,8 +1,6 @@
 package org.aiwen.downloader;
 
-import android.app.Application;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 
@@ -13,58 +11,64 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Hawk {
 
+    private static Hawk mInstance;
+
     /**
      * 在Application中初始化
      *
      * @param context
      */
-    private static void setup(Context context) {
+    public static void setupWithConfig(Context context, Configuration config) {
         if (mInstance == null) {
             synchronized (Hawk.class) {
-                mInstance = new Hawk(context);
-                mInstance.mRequestMap = new ConcurrentHashMap<>();
+                mInstance = new Hawk(context, config);
             }
         }
     }
 
     @NonNull
-    public static Hawk getInstance(Context context) {
-        if (mInstance == null) {
-            setup(context);
-        }
-
+    public static Hawk getInstance() {
         return mInstance;
     }
 
-    private static Hawk mInstance;
+    private final Configuration mConfig;
 
     private final Context mContext;
 
     private final DownloadDB mDB;
 
-    private Hawk(Context context) {
+    volatile ConcurrentHashMap<String, Request> mRequestMap;// 正在进行的请求
+
+    private Hawk(Context context, Configuration config) {
         if (context != context.getApplicationContext()) {
             context = context.getApplicationContext();
         }
 
         mContext = context;
+        mConfig = config;
+        mRequestMap = new ConcurrentHashMap<>();
         mDB = new DownloadDB(context);
 
         DLogger.w("Hawk new instance");
     }
 
-    private static volatile ConcurrentHashMap<String, Request> mRequestMap;// 正在进行的请求
-
-    public static Request create(Uri uri) {
-        String key = KeyGenerator.generateMD5(uri.toString());
-
-        if (mInstance != null && mRequestMap.containsKey(key)) {
-            return mRequestMap.get(key);
-        }
-
-        return new Request(uri);
+    Configuration getConfiguration() {
+        return mConfig;
     }
 
+    public static Request create(Uri uri, Uri fileUri) {
+        String key = KeyGenerator.generateMD5(uri.toString());
+
+        if (mInstance != null && mInstance.mRequestMap.containsKey(key)) {
+            return mInstance.mRequestMap.get(key);
+        }
+
+        return new Request(uri, fileUri);
+    }
+
+    IDownloader createDownloader(Request request) {
+        return new OkHttpDownloader2();
+    }
 
     /**
      * 开始下载
@@ -73,7 +77,7 @@ public class Hawk {
      */
     public void enqueue(Request request) {
         // 已经有正在进行的请求了
-        if (mRequestMap.containsKey(request.getKey())
+        if (mRequestMap.containsKey(request.key)
                 || mDB.exist(request)) {
             // 更新下载
             mDB.update(request);
@@ -84,8 +88,8 @@ public class Hawk {
         }
 
         // 放在内存中
-        if (!mRequestMap.containsKey(request.getKey())) {
-            mRequestMap.put(request.getKey(), request);
+        if (!mRequestMap.containsKey(request.key)) {
+            mRequestMap.put(request.key, request);
         }
 
         DownloadService.request(mContext);

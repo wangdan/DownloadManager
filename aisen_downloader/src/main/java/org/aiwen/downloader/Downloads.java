@@ -155,6 +155,20 @@ final class Downloads {
          */
         public static final int STATUS_SUCCESS = 200;
 
+        /**
+         * This download has completed with an error.
+         * Warning: there will be other status values that indicate errors in
+         * the future. Use isStatusError() to capture the entire category.
+         */
+        public static final int STATUS_UNKNOWN_ERROR = 491;
+
+        /**
+         * This download couldn't be completed because of a storage issue.
+         * Typically, that's because the filesystem is missing or full.
+         * Use the more specific {@link #STATUS_INSUFFICIENT_SPACE_ERROR}
+         */
+        public static final int STATUS_FILE_ERROR = 492;
+
     }
 
 }

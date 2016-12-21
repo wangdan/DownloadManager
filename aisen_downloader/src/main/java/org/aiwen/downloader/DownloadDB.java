@@ -67,7 +67,7 @@ class DownloadDB extends SQLiteOpenHelper {
     public boolean exist(Request request) {
         String[] columns = new String[]{ Downloads.Impl._ID };
         String selection = String.format(" %s = ? ", Downloads.Impl.COLUMN_KEY);
-        String[] selectionArgs = new String[]{ request.getKey() };
+        String[] selectionArgs = new String[]{ request.key};
         Cursor cursor = getWritableDatabase().query(DB_TABLE, columns, selection, selectionArgs, null, null, null);
 
         try {
@@ -75,7 +75,7 @@ class DownloadDB extends SQLiteOpenHelper {
 
                 int id = cursor.getInt(cursor.getColumnIndexOrThrow(Downloads.Impl._ID));
                 DLogger.v(TAG, "exist(true), ID = %d", id);
-                request.setId(id);
+                request.id = id;
 
                 return true;
             }
@@ -93,7 +93,7 @@ class DownloadDB extends SQLiteOpenHelper {
 
     public void update(Request request) {
         String whereClause = String.format(" %s = ? ", Downloads.Impl.COLUMN_KEY);
-        String[] whereArgs = new String[]{ request.getKey() };
+        String[] whereArgs = new String[]{ request.key};
         int rowId = getWritableDatabase().update(DB_TABLE, request.getContentValues(), whereClause, whereArgs);
 
         DLogger.v(TAG, "rowId = %d, update(%s)", rowId, request.toString());
@@ -101,6 +101,8 @@ class DownloadDB extends SQLiteOpenHelper {
 
     public void insert(Request request) {
         long rowId = getWritableDatabase().insert(DB_TABLE, Downloads.Impl.COLUMN_KEY, request.getContentValues());
+
+        request.id = rowId;
 
         DLogger.v(TAG, "rowId = %s, insert(%s)", Long.toString(rowId), request.toString());
     }

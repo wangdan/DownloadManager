@@ -11,41 +11,29 @@ import android.net.Uri;
  */
 public final class Request {
 
-    private int mId;// DB中的ID
+    long id;// DB中的ID
 
-    private final String mKey;// 每一个Request唯一Key
+    final String key;// 每一个Request唯一Key
 
-    private final Uri mUri;// 下载请求的URI
+    Uri uri;// 下载请求的URI
 
-    private int status = -1;// 下载的状态
+    Uri fileUri;// 文件保存路径
 
-    Request(Uri uri) {
-        this.mUri = uri;
-        mKey = KeyGenerator.generateMD5(mUri.toString());
-    }
+    final DownloadInfo downloadInfo;
 
-    void setId(int id) {
-        mId = id;
-    }
-
-    public int getId() {
-        return mId;
-    }
-
-    public String getKey() {
-        return mKey;
-    }
-
-    public Uri getURI() {
-        return mUri;
+    Request(Uri uri, Uri fileUri) {
+        this.uri = uri;
+        this.fileUri = fileUri;
+        key = KeyGenerator.generateMD5(this.uri.toString());
+        downloadInfo = new DownloadInfo();
     }
 
     public ContentValues getContentValues() {
         ContentValues contentValues = new ContentValues();
 
-        contentValues.put(Downloads.Impl.COLUMN_KEY, mKey);
-        contentValues.put(Downloads.Impl.COLUMN_STATUS, status);
-        contentValues.put(Downloads.Impl.COLUMN_URI, mUri.toString());
+        contentValues.put(Downloads.Impl.COLUMN_KEY, key);
+        contentValues.put(Downloads.Impl.COLUMN_STATUS, downloadInfo.status);
+        contentValues.put(Downloads.Impl.COLUMN_URI, uri.toString());
 
         return contentValues;
     }
@@ -53,10 +41,10 @@ public final class Request {
     @Override
     public String toString() {
         return new StringBuffer()
-                .append("key = ").append(mKey)
-                .append(", id = ").append(mId)
-                .append(", status = ").append(status)
-                .append(", uri = ").append(mUri.toString())
+                .append("key = ").append(key)
+                .append(", id = ").append(id)
+                .append(", status = ").append(downloadInfo.status)
+                .append(", uri = ").append(uri.toString())
                 .toString();
     }
 
