@@ -148,14 +148,14 @@ public class DownloadThread implements Runnable {
                 transferData(request, response);
             }
             else {
-                // TODO
-                throw new DownloadException();
+                throw new DownloadException(Downloads.Status.STATUS_HTTP_EXCEPTION);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ioe) {
+            Utils.printStackTrace(ioe);
 
-            // TODO
-            throw new DownloadException();
+            throw new DownloadException(Downloads.Status.STATUS_HTTP_EXCEPTION);
+        } catch (Exception e) {
+            Utils.printStackTrace(e);
         }
     }
 
@@ -168,9 +168,9 @@ public class DownloadThread implements Runnable {
         try {
             out = new FileOutputStream(mTempFile, true);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            // TODO
-            throw new DownloadException();
+            Utils.printStackTrace(e);
+
+            throw new DownloadException(Downloads.Status.STATUS_FILE_ERROR);
         }
 
         // Content-Length
@@ -221,10 +221,9 @@ public class DownloadThread implements Runnable {
 
             out.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            Utils.printStackTrace(e);
 
-            // TODO
-            throw new DownloadException();
+            throw new DownloadException(Downloads.Status.STATUS_HTTP_DATA_ERROR);
         } finally {
             mRequest.downloadInfo.writeToDatabase();
 

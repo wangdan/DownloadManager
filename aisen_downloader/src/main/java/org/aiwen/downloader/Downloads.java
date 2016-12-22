@@ -170,6 +170,18 @@ final class Downloads {
         public static final int STATUS_FILE_ERROR = 492;
 
         /**
+         * This download couldn't be completed because of an
+         * error receiving or processing data at the HTTP level.
+         */
+        public static final int STATUS_HTTP_DATA_ERROR = 495;
+
+        /**
+         * This download couldn't be completed because of an
+         * HttpException while setting up the request.
+         */
+        public static final int STATUS_HTTP_EXCEPTION = 496;
+
+        /**
          * Returns whether the status is a success (i.e. 2xx).
          */
         public static boolean isStatusSuccess(int status) {
@@ -192,7 +204,13 @@ final class Downloads {
 
             switch (status) {
                 case STATUS_FILE_ERROR:
-                    error = "FILE_ERROR";;
+                    error = "FILE_ERROR";
+                    break;
+                case STATUS_HTTP_DATA_ERROR:
+                    error = "HTTP_DATA_ERROR";
+                    break;
+                case STATUS_HTTP_EXCEPTION:
+                    error = "HTTP_EXCEPTION";
                     break;
                 default:
                     error = "UNKNOWN_ERROR";
