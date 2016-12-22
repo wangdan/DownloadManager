@@ -183,7 +183,7 @@ public class DownloadThread implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        DLogger.d(Utils.getDownloaderTAG(request), "Total-Length = %d, Content-Length = %d", totalLen, contentLen);
+        DLogger.d(Utils.getDownloaderTAG(request), "fileBytes(%d), rangeBytes(%d), Content-Length(%d)", totalLen, downloadInfo.rangeBytes, contentLen);
         if (totalLen != -1) {
             downloadInfo.fileBytes = totalLen;
         }

@@ -30,7 +30,7 @@ public class DownloadException extends Exception {
 
     @Override
     public String toString() {
-        return String.format("status(%d), error(%s)", status, getError());
+        return super.toString() + String.format(": status(%d), error(%s)", status, getError());
     }
 
 }
