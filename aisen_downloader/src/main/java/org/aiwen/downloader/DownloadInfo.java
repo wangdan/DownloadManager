@@ -6,10 +6,23 @@ package org.aiwen.downloader;
 
 public class DownloadInfo {
 
+    private final Request mRequest;
+
     int status = -1;// 下载的状态
 
     long rangeBytes;// 文件已下载长度
 
     long fileBytes = -1;// 文件总长度
+
+    public DownloadInfo(Request request) {
+        mRequest = request;
+    }
+
+    void writeToDatabase() {
+        Hawk hawk = Hawk.getInstance();
+        if (hawk != null) {
+            hawk.db.update(mRequest);
+        }
+    }
 
 }

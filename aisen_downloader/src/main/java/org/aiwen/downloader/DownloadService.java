@@ -40,8 +40,9 @@ public class DownloadService extends Service {
         context.startService(service);
     }
 
-    static final int MSG_UPDATE = 1000;
-    static final int MSG_NOTIFY = 1001;
+    final int NOTIFY_INTERVAL = 700;// 间隔刷新Download_Observer的时间
+    final int MSG_UPDATE = 1000;
+    final int MSG_NOTIFY = 1001;
 
     private HandlerThread mHandlerThread;
     private Handler mHandler;
@@ -114,7 +115,7 @@ public class DownloadService extends Service {
         if (mHandler != null) {
             mHandler.removeMessages(MSG_NOTIFY);
             if (delay) {
-                mHandler.sendEmptyMessageDelayed(MSG_NOTIFY, 500);
+                mHandler.sendEmptyMessageDelayed(MSG_NOTIFY, NOTIFY_INTERVAL);
             }
             else {
                 mHandler.obtainMessage(MSG_NOTIFY).sendToTarget();
@@ -202,7 +203,7 @@ public class DownloadService extends Service {
                     break;
 
                 // 新建下载
-                if (request.downloadInfo.status == -1) {
+                if (request.downloadInfo.status == -1 || !request.isRunning()) {
                     isActive = true;
 
                     mExecutor.execute(new DownloadThread(hawk, request, DownloadService.this));

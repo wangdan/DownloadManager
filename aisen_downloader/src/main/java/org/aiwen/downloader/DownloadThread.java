@@ -1,10 +1,12 @@
 package org.aiwen.downloader;
 
 import android.net.Uri;
+import android.os.SystemClock;
 
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Response;
 
+import org.aiwen.downloader.utils.Constants;
 import org.aiwen.downloader.utils.Utils;
 
 import java.io.File;
@@ -62,10 +64,18 @@ public class DownloadThread implements Runnable {
     private final Request mRequest;
     private final DownloadService mService;
     private final Hawk mHawk;
+    private File mTempFile;
+
+    /**
+     * Details from the last time we pushed a database update.
+     */
+    private long mLastUpdateBytes = 0;
+    private long mLastUpdateTime = 0;
 
     public DownloadThread(Hawk hawk, Request request, DownloadService service) {
         mHawk = hawk;
         mRequest = request;
+        mRequest.thread = this;
         mRequest.downloadInfo.status = Downloads.Status.STATUS_PENDING;
         mHawk.trace.peddingThread.incrementAndGet();
         mService = service;
@@ -74,22 +84,32 @@ public class DownloadThread implements Runnable {
 
     @Override
     public void run() {
+        mHawk.trace.peddingThread.decrementAndGet();
+        mHawk.trace.concurrentThread.incrementAndGet();
+
         try {
+            // 创建临时文件
+            mTempFile = FileManager.createTempFile(mRequest);
+
             mRequest.trace = new ThreadTrace(mRequest);
 
             mRequest.downloadInfo.status = Downloads.Status.STATUS_RUNNING;
-            mHawk.trace.peddingThread.decrementAndGet();
-            mHawk.trace.concurrentThread.incrementAndGet();
+            mRequest.downloadInfo.writeToDatabase();
 
             DLogger.d(Utils.getDownloaderTAG(mRequest), "开始下载(%s)", mRequest.uri);
             executeDownload(mRequest);
             DLogger.d(Utils.getDownloaderTAG(mRequest), "结束下载(%s)", mRequest.uri);
 
             mRequest.downloadInfo.status = Downloads.Status.STATUS_SUCCESS;
-            mHawk.trace.concurrentThread.decrementAndGet();
         } catch (DownloadException e) {
             e.printStackTrace();
+
+            // TODO
+        } finally {
+            mHawk.trace.concurrentThread.decrementAndGet();
         }
+
+        mRequest.thread = null;
 
         mService.threadDecrement();
         mService.stopIfNeed();
@@ -113,6 +133,7 @@ public class DownloadThread implements Runnable {
 
         // 断点下载
         if (downloadInfo.rangeBytes > 0) {
+            DLogger.i(Utils.getDownloaderTAG(request), "set range header = %d", downloadInfo.rangeBytes);
             builder.addHeader("Range", "bytes="+ downloadInfo.rangeBytes + "-");
         }
 
@@ -141,11 +162,9 @@ public class DownloadThread implements Runnable {
         final DownloadInfo downloadInfo = request.downloadInfo;
         final ThreadTrace trace = request.trace;
 
-        // 创建临时文件
-        File tempFile = FileManager.createTempFile(request);
         final FileOutputStream out;
         try {
-            out = new FileOutputStream(tempFile);
+            out = new FileOutputStream(mTempFile, true);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             // TODO
@@ -167,6 +186,8 @@ public class DownloadThread implements Runnable {
             downloadInfo.fileBytes = totalLen;
         }
 
+        mRequest.downloadInfo.writeToDatabase();
+
         InputStream in = null;
         try {
             in = response.body().byteStream();
@@ -178,7 +199,21 @@ public class DownloadThread implements Runnable {
             while ((readLen = in.read(readBuffer)) != -1) {
                 out.write(readBuffer, 0, readLen);
 
+                mRequest.downloadInfo.rangeBytes += readLen;
                 trace.receive(readLen);
+
+                final long now = SystemClock.elapsedRealtime();
+                final long currentBytes = downloadInfo.rangeBytes;
+
+                // 更新DB下载进度
+                final long bytesDelta = currentBytes - mLastUpdateBytes;
+                final long timeDelta = now - mLastUpdateTime;
+                if (bytesDelta > Constants.MIN_PROGRESS_STEP && timeDelta > Constants.MIN_PROGRESS_TIME) {
+                    mRequest.downloadInfo.writeToDatabase();
+
+                    mLastUpdateBytes = currentBytes;
+                    mLastUpdateTime = now;
+                }
             }
             trace.endRead();
 
@@ -189,6 +224,8 @@ public class DownloadThread implements Runnable {
             // TODO
             throw new DownloadException();
         } finally {
+            mRequest.downloadInfo.writeToDatabase();
+
             Utils.close(in);
             Utils.close(out);
         }

@@ -65,7 +65,7 @@ class DownloadDB extends SQLiteOpenHelper {
     }
 
     public boolean exist(Request request) {
-        String[] columns = new String[]{ Downloads.Impl._ID };
+        String[] columns = null;
         String selection = String.format(" %s = ? ", Downloads.Impl.COLUMN_KEY);
         String[] selectionArgs = new String[]{ request.key};
         Cursor cursor = getWritableDatabase().query(DB_TABLE, columns, selection, selectionArgs, null, null, null);
@@ -73,9 +73,8 @@ class DownloadDB extends SQLiteOpenHelper {
         try {
             if (cursor.moveToFirst()) {
 
-                int id = cursor.getInt(cursor.getColumnIndexOrThrow(Downloads.Impl._ID));
-                DLogger.v(TAG, "exist(true), ID = %d", id);
-                request.id = id;
+                request.set(cursor);
+                DLogger.v(TAG, "exist(true), ID = %d", request.id);
 
                 return true;
             }

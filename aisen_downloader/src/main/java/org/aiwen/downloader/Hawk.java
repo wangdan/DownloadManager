@@ -35,7 +35,7 @@ public class Hawk {
 
     private final Context mContext;
 
-    private final DownloadDB mDB;
+    final DownloadDB db;
 
     final HawkTrace trace;
 
@@ -49,7 +49,7 @@ public class Hawk {
         mContext = context;
         mConfig = config;
         mRequestMap = new ConcurrentHashMap<>();
-        mDB = new DownloadDB(context);
+        db = new DownloadDB(context);
         trace = new HawkTrace();
 
         DLogger.w("Hawk new instance");
@@ -78,13 +78,13 @@ public class Hawk {
         // 已经有正在进行的请求了
         synchronized (mRequestMap) {
             if (mRequestMap.containsKey(request.key)
-                    || mDB.exist(request)) {
+                    || db.exist(request)) {
                 // 更新下载
-                mDB.update(request);
+                db.update(request);
             }
             else {
                 // 新增下载
-                mDB.insert(request);
+                db.insert(request);
             }
 
             // 放在内存中
@@ -97,22 +97,8 @@ public class Hawk {
         DownloadService.request(mContext, request);
     }
 
-    /**
-     * 正在下载的即时速度
-     *
-     * @return
-     */
-    public float getSpeed() {
-        return trace.speed;
-    }
-
-    /**
-     * 正在下载的平均速度
-     *
-     * @return
-     */
-    public float getAverageSpeed() {
-        return trace.averageSpeed;
+    public HawkTrace getTrace() {
+        return trace;
     }
 
 }

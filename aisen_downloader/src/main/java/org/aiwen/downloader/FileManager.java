@@ -36,6 +36,9 @@ class FileManager {
 
                 request.downloadInfo.rangeBytes = 0;
             }
+            else {
+                DLogger.d(Utils.getDownloaderTAG(request), "文件断点下载，file(%d), range(%d)", tempFile.length(), rangeBytes);
+            }
         }
         else {
             // 创建父文件夹
