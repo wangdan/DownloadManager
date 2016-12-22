@@ -66,10 +66,6 @@ public class Hawk {
         return new Request(uri, fileUri);
     }
 
-    IDownloader createDownloader(Request request) {
-        return new OkHttpDownloader();
-    }
-
     /**
      * 开始下载
      *
@@ -77,19 +73,22 @@ public class Hawk {
      */
     public void enqueue(Request request) {
         // 已经有正在进行的请求了
-        if (mRequestMap.containsKey(request.key)
-                || mDB.exist(request)) {
-            // 更新下载
-            mDB.update(request);
-        }
-        else {
-            // 新增下载
-            mDB.insert(request);
-        }
+        synchronized (mRequestMap) {
+            if (mRequestMap.containsKey(request.key)
+                    || mDB.exist(request)) {
+                // 更新下载
+                mDB.update(request);
+            }
+            else {
+                // 新增下载
+                mDB.insert(request);
+            }
 
-        // 放在内存中
-        if (!mRequestMap.containsKey(request.key)) {
-            mRequestMap.put(request.key, request);
+            // 放在内存中
+            if (!mRequestMap.containsKey(request.key)) {
+                mRequestMap.put(request.key, request);
+            }
+
         }
 
         DownloadService.request(mContext);

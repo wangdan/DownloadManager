@@ -191,7 +191,7 @@ public class DownloadService extends Service {
                     if (request.downloadInfo.status == -1) {
                         isActive = true;
 
-                        mExecutor.execute(new DownloadThread(startId, request, hawk.createDownloader(request), DownloadService.this));
+                        mExecutor.execute(new DownloadThread(startId, request, DownloadService.this));
                     }
                 }
             }

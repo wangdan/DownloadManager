@@ -1,6 +1,5 @@
 package org.aiwen.downloader.utils;
 
-import org.aiwen.downloader.IDownloader;
 import org.aiwen.downloader.Request;
 
 import java.io.Closeable;
@@ -21,7 +20,7 @@ public class Utils {
     }
 
     public static String getDownloaderTAG(Request request) {
-        return IDownloader.TAG + "_" + request.key;
+        return Constants.TAG + "_Thread_" + request.key;
     }
 
 }
