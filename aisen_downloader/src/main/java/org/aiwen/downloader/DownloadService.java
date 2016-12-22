@@ -163,7 +163,12 @@ public class DownloadService extends Service {
         for (String key : keys) {
             Request request = hawk.mRequestMap.get(key);
 
+            boolean notifyEvent = false;
+
+            // 正在下载
             if (Downloads.Status.isStatusRunning(request.downloadInfo.status)) {
+                notifyEvent = true;
+
                 if (request.trace != null) {
                     synchronized (request.trace) {
                         request.trace.endSpeedCount();
@@ -174,10 +179,19 @@ public class DownloadService extends Service {
                     }
                 }
             }
+            else if (Downloads.Status.isStatusError(request.downloadInfo.status)) {
+                notifyEvent = true;
+
+                DLogger.e(Utils.getDownloaderTAG(request), "下载失败(%d, %s)", request.downloadInfo.status, request.downloadInfo.error);
+            }
             else if (Downloads.Status.isStatusSuccess(request.downloadInfo.status)) {
                 if (request.trace != null) {
                     DLogger.v(Utils.getDownloaderTAG(request), "下载结束，下载耗时 %d ms， 总耗时 %d ms，平均速度 %d kb/s", request.trace.getTime(), request.trace.getRealTime(), (int) request.trace.getAverageSpeed());
                 }
+            }
+
+            if (notifyEvent) {
+                // TODO
             }
         }
         hawk.trace.speed = speed;

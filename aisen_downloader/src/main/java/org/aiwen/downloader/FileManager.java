@@ -16,49 +16,55 @@ class FileManager {
      * @param request
      * @return
      */
-    static File createTempFile(Request request) {
-        File tempFile = new File(request.fileUri.getPath() + ".dt");
-        long rangeBytes = request.downloadInfo.rangeBytes;
+    static File createTempFile(Request request) throws DownloadException {
+        try {
+            File tempFile = new File(request.fileUri.getPath() + ".dt");
+            long rangeBytes = request.downloadInfo.rangeBytes;
 
-        if (tempFile.exists()) {
-            DLogger.v(Utils.getDownloaderTAG(request), "临时文件已存在");
+            if (tempFile.exists()) {
+                DLogger.v(Utils.getDownloaderTAG(request), "临时文件已存在");
 
-            // 临时文件长度和缓存数据不一致，删除缓存文件重新下载
-            if (tempFile.length() > 0 && tempFile.length() != rangeBytes) {
-                DLogger.w(Utils.getDownloaderTAG(request), "临时文件长度和缓存数据长度不一致，file(%d), range(%d)", tempFile.length(), rangeBytes);
+                // 临时文件长度和缓存数据不一致，删除缓存文件重新下载
+                if (tempFile.length() > 0 && tempFile.length() != rangeBytes) {
+                    DLogger.w(Utils.getDownloaderTAG(request), "临时文件长度和缓存数据长度不一致，file(%d), range(%d)", tempFile.length(), rangeBytes);
 
-                if (tempFile.delete()) {
-                    DLogger.w(Utils.getDownloaderTAG(request), "删除临时文件");
+                    if (tempFile.delete()) {
+                        DLogger.w(Utils.getDownloaderTAG(request), "删除临时文件");
+                    }
+                    else {
+                        DLogger.w(Utils.getDownloaderTAG(request), "删除临时文件失败");
+                    }
+
+                    request.downloadInfo.rangeBytes = 0;
                 }
                 else {
-                    DLogger.w(Utils.getDownloaderTAG(request), "删除临时文件失败");
+                    DLogger.d(Utils.getDownloaderTAG(request), "文件断点下载，file(%d), range(%d)", tempFile.length(), rangeBytes);
                 }
-
-                request.downloadInfo.rangeBytes = 0;
             }
             else {
-                DLogger.d(Utils.getDownloaderTAG(request), "文件断点下载，file(%d), range(%d)", tempFile.length(), rangeBytes);
-            }
-        }
-        else {
-            // 创建父文件夹
-            File dir = tempFile.getParentFile();
-            if (dir.exists()) {
-                if (!dir.isDirectory()) {
-                    dir.delete();
+                // 创建父文件夹
+                File dir = tempFile.getParentFile();
+                if (dir.exists()) {
+                    if (!dir.isDirectory()) {
+                        dir.delete();
+                        dir.mkdirs();
+
+                        DLogger.d(Utils.getDownloaderTAG(request), "新建下载目标文件夹(%s)", dir.getAbsolutePath());
+                    }
+                }
+                else {
                     dir.mkdirs();
 
                     DLogger.d(Utils.getDownloaderTAG(request), "新建下载目标文件夹(%s)", dir.getAbsolutePath());
                 }
             }
-            else {
-                dir.mkdirs();
 
-                DLogger.d(Utils.getDownloaderTAG(request), "新建下载目标文件夹(%s)", dir.getAbsolutePath());
-            }
+            return tempFile;
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            throw new DownloadException(Downloads.Status.STATUS_FILE_ERROR);
         }
-
-        return tempFile;
     }
 
 }

@@ -104,7 +104,9 @@ public class DownloadThread implements Runnable {
         } catch (DownloadException e) {
             e.printStackTrace();
 
-            // TODO
+            mRequest.downloadInfo.status = e.getStatus();
+            mRequest.downloadInfo.error = e.getError();
+            mRequest.downloadInfo.writeToDatabase();
         } finally {
             mHawk.trace.concurrentThread.decrementAndGet();
         }

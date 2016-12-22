@@ -176,8 +176,30 @@ final class Downloads {
             return (status >= 200 && status < 300);
         }
 
+        /**
+         * Returns whether the status is an error (i.e. 4xx or 5xx).
+         */
+        public static boolean isStatusError(int status) {
+            return (status >= 400 && status < 600);
+        }
+
         public static boolean isStatusRunning(int status) {
             return status == STATUS_PENDING || status == STATUS_RUNNING;
+        }
+
+        public static String statusToString(int status) {
+            String error;
+
+            switch (status) {
+                case STATUS_FILE_ERROR:
+                    error = "FILE_ERROR";;
+                    break;
+                default:
+                    error = "UNKNOWN_ERROR";
+                    break;
+            }
+
+            return error;
         }
 
     }

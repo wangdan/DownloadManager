@@ -10,6 +10,8 @@ public class DownloadInfo {
 
     int status = -1;// 下载的状态
 
+    String error = "";// 失败消息
+
     long rangeBytes;// 文件已下载长度
 
     long fileBytes = -1;// 文件总长度
