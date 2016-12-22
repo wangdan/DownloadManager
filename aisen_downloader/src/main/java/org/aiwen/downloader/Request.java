@@ -19,7 +19,7 @@ public final class Request {
 
     Uri fileUri;// 文件保存路径
 
-    Trace trace;
+    ThreadTrace trace;
 
     final DownloadInfo downloadInfo;
 

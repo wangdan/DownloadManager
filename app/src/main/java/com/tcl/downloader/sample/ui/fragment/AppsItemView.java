@@ -27,6 +27,8 @@ import org.aisen.download.DownloadMsg;
 import org.aisen.download.IDownloadObserver;
 import org.aisen.download.IDownloadSubject;
 import org.aisen.download.Request;
+import org.aiwen.downloader.Hawk;
+import org.aiwen.downloader.KeyGenerator;
 
 import java.io.File;
 
@@ -114,6 +116,18 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
     @Override
     public void onClick(View v) {
         if (v == mActionButton) {
+            if (true) {
+                AppBean app = (AppBean) mActionButton.getTag();
+
+                Uri uri = Uri.parse(app.getApk_url());
+                Uri fileUri = Uri.fromFile(new File(getContext().getExternalFilesDir("apks") + File.separator + KeyGenerator.generateMD5(uri.toString()) + ".apk"));
+                org.aiwen.downloader.Request request = Hawk.create(uri, fileUri);
+
+                Hawk.getInstance().enqueue(request);
+
+                return;
+            }
+
             if (downloadMsg == null)
                 return;
 

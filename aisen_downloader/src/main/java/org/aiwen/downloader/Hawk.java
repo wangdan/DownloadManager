@@ -37,6 +37,8 @@ public class Hawk {
 
     private final DownloadDB mDB;
 
+    final HawkTrace trace;
+
     volatile ConcurrentHashMap<String, Request> mRequestMap;// 正在进行的请求
 
     private Hawk(Context context, Configuration config) {
@@ -48,6 +50,7 @@ public class Hawk {
         mConfig = config;
         mRequestMap = new ConcurrentHashMap<>();
         mDB = new DownloadDB(context);
+        trace = new HawkTrace();
 
         DLogger.w("Hawk new instance");
     }
@@ -92,6 +95,24 @@ public class Hawk {
         }
 
         DownloadService.request(mContext, request);
+    }
+
+    /**
+     * 正在下载的即时速度
+     *
+     * @return
+     */
+    public float getSpeed() {
+        return trace.speed;
+    }
+
+    /**
+     * 正在下载的平均速度
+     *
+     * @return
+     */
+    public float getAverageSpeed() {
+        return trace.averageSpeed;
     }
 
 }

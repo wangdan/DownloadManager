@@ -6,7 +6,7 @@ package org.aiwen.downloader;
 
 public class Configuration {
 
-    private int maxConcurrentDownloadsAllowed = 3;
+    private int maxConcurrentDownloadsAllowed = 3;// 最大下载任务
 
     public int getMaxConcurrentDownloadsAllowed() {
         return maxConcurrentDownloadsAllowed;

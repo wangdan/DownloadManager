@@ -61,10 +61,13 @@ public class DownloadThread implements Runnable {
 
     private final Request mRequest;
     private final DownloadService mService;
+    private final Hawk mHawk;
 
-    public DownloadThread(Request request, DownloadService service) {
+    public DownloadThread(Hawk hawk, Request request, DownloadService service) {
+        mHawk = hawk;
         mRequest = request;
         mRequest.downloadInfo.status = Downloads.Status.STATUS_PENDING;
+        mHawk.trace.peddingThread.incrementAndGet();
         mService = service;
         mService.threadIncrement();
     }
@@ -72,15 +75,18 @@ public class DownloadThread implements Runnable {
     @Override
     public void run() {
         try {
-            mRequest.trace = new Trace(mRequest);
+            mRequest.trace = new ThreadTrace(mRequest);
 
             mRequest.downloadInfo.status = Downloads.Status.STATUS_RUNNING;
+            mHawk.trace.peddingThread.decrementAndGet();
+            mHawk.trace.concurrentThread.incrementAndGet();
 
             DLogger.d(Utils.getDownloaderTAG(mRequest), "开始下载(%s)", mRequest.uri);
             executeDownload(mRequest);
             DLogger.d(Utils.getDownloaderTAG(mRequest), "结束下载(%s)", mRequest.uri);
 
             mRequest.downloadInfo.status = Downloads.Status.STATUS_SUCCESS;
+            mHawk.trace.concurrentThread.decrementAndGet();
         } catch (DownloadException e) {
             e.printStackTrace();
         }
@@ -93,7 +99,7 @@ public class DownloadThread implements Runnable {
     private void executeDownload(Request request) throws DownloadException {
         final Uri uri = request.uri;
         final DownloadInfo downloadInfo = request.downloadInfo;
-        final Trace trace = request.trace;
+        final ThreadTrace trace = request.trace;
 
         com.squareup.okhttp.Request.Builder builder = new com.squareup.okhttp.Request.Builder();
         final String url;
@@ -133,7 +139,7 @@ public class DownloadThread implements Runnable {
     // 缓存数据
     private void transferData(Request request, Response response) throws DownloadException {
         final DownloadInfo downloadInfo = request.downloadInfo;
-        final Trace trace = request.trace;
+        final ThreadTrace trace = request.trace;
 
         // 创建临时文件
         File tempFile = FileManager.createTempFile(request);
@@ -186,6 +192,13 @@ public class DownloadThread implements Runnable {
             Utils.close(in);
             Utils.close(out);
         }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+
+        DLogger.w(Utils.getDownloaderTAG(mRequest), "Thread finalize()");
     }
 
 }

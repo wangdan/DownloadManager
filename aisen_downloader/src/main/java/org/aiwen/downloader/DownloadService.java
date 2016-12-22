@@ -53,10 +53,13 @@ public class DownloadService extends Service {
     public void onCreate() {
         super.onCreate();
 
+        DLogger.w(TAG, "Service onCreate()");
+
         Configuration config = Hawk.getInstance().getConfiguration();
 
-        mExecutor = new ThreadPoolExecutor(config.getMaxConcurrentDownloadsAllowed(),
-                                           config.getMaxConcurrentDownloadsAllowed(),
+        int maxDownloadAllowed = config.getMaxConcurrentDownloadsAllowed();
+        mExecutor = new ThreadPoolExecutor(maxDownloadAllowed,
+                                           maxDownloadAllowed,
                                            10L,
                                            TimeUnit.SECONDS,
                                            new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
@@ -154,6 +157,8 @@ public class DownloadService extends Service {
 
         Set<String> keys = hawk.mRequestMap.keySet();
 
+        float speed = 0.0f;
+        float averageSpeed = 0.0f;
         for (String key : keys) {
             Request request = hawk.mRequestMap.get(key);
 
@@ -162,6 +167,8 @@ public class DownloadService extends Service {
                     synchronized (request.trace) {
                         request.trace.endSpeedCount();
                         DLogger.v(Utils.getDownloaderTAG(request), "下载速度(%d), 平均速度(%d)", (int) request.trace.getSpeed(), (int) request.trace.getAverageSpeed());
+                        speed += request.trace.getSpeed();
+                        averageSpeed += request.trace.getAverageSpeed();
                         request.trace.beginSpeedCount();
                     }
                 }
@@ -172,6 +179,9 @@ public class DownloadService extends Service {
                 }
             }
         }
+        hawk.trace.speed = speed;
+        hawk.trace.averageSpeed = averageSpeed;
+        DLogger.v(TAG, "%d 个任务下载中, %d 个任务等待中", hawk.trace.concurrentThread.get(), hawk.trace.peddingThread.get());
 
         enqueueNotify(true);
     }
@@ -195,7 +205,7 @@ public class DownloadService extends Service {
                 if (request.downloadInfo.status == -1) {
                     isActive = true;
 
-                    mExecutor.execute(new DownloadThread(request, DownloadService.this));
+                    mExecutor.execute(new DownloadThread(hawk, request, DownloadService.this));
                 }
             }
         } while (false);
@@ -221,16 +231,9 @@ public class DownloadService extends Service {
     public void onDestroy() {
         super.onDestroy();
 
-        mHandler.postDelayed(new Runnable() {
+        DLogger.w(TAG, "DownloadService onDestory");
 
-            @Override
-            public void run() {
-                DLogger.w(TAG, "DownloadService onDestory");
-
-                destoryResource();
-            }
-
-        },  200);
+        destoryResource();
     }
 
     void stopIfNeed() {
@@ -239,12 +242,11 @@ public class DownloadService extends Service {
 
                 @Override
                 public void run() {
-                    DLogger.w(TAG, "stopSelf");
-
                     handleNotify();
 
                     destoryResource();
 
+                    DLogger.w(TAG, "stopSelf");
                     stopSelf();
                 }
 
@@ -269,6 +271,13 @@ public class DownloadService extends Service {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+
+        DLogger.w(TAG, "Service finalize()");
     }
 
 }

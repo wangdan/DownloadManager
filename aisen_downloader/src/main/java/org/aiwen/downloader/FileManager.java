@@ -44,13 +44,15 @@ class FileManager {
                 if (!dir.isDirectory()) {
                     dir.delete();
                     dir.mkdirs();
+
+                    DLogger.d(Utils.getDownloaderTAG(request), "新建下载目标文件夹(%s)", dir.getAbsolutePath());
                 }
             }
             else {
                 dir.mkdirs();
-            }
 
-            DLogger.d(Utils.getDownloaderTAG(request), "新建下载目标文件夹(%s)", dir.getAbsolutePath());
+                DLogger.d(Utils.getDownloaderTAG(request), "新建下载目标文件夹(%s)", dir.getAbsolutePath());
+            }
         }
 
         return tempFile;

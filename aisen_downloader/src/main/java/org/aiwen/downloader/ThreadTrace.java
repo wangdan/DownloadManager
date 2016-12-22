@@ -5,7 +5,7 @@ import android.os.SystemClock;
 /**
  * Created by 王dan on 2016/12/21.
  */
-public class Trace {
+public class ThreadTrace {
 
     final Request request;
 
@@ -25,7 +25,7 @@ public class Trace {
 
     private volatile long receiveSize;
 
-    public Trace(Request request) {
+    public ThreadTrace(Request request) {
         this.request = request;
     }
 
