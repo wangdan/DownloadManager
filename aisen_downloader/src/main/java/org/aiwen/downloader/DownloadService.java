@@ -32,8 +32,9 @@ public class DownloadService extends Service {
 
     public static final String ACTION_REQUEST = "org.aisen.downloader.ACTION_REQUEST";
 
-    public static void request(Context context) {
+    public static void request(Context context, Request request) {
         Intent service = new Intent(context, DownloadService.class);
+        service.putExtra("key", request.key);
         service.setAction(ACTION_REQUEST);
 
         context.startService(service);
@@ -42,11 +43,11 @@ public class DownloadService extends Service {
     static final int MSG_UPDATE = 1000;
     static final int MSG_NOTIFY = 1001;
 
-    volatile int lastStartId;
     private HandlerThread mHandlerThread;
     private Handler mHandler;
     private ThreadPoolExecutor mExecutor;
-    private AtomicBoolean mResourceDestoryed;
+    private AtomicBoolean mResourceDestoryed = new AtomicBoolean(false);
+    private AtomicInteger mThreadCount = new AtomicInteger();
 
     @Override
     public void onCreate() {
@@ -74,20 +75,17 @@ public class DownloadService extends Service {
         mHandler = new Handler(mHandlerThread.getLooper(), mCallback);
 
         enqueueNotify(true);
-        mResourceDestoryed = new AtomicBoolean(false);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         do {
-            lastStartId = startId;
-
             if (intent == null || TextUtils.isEmpty(intent.getAction())) {
                 break;
             }
 
             if (ACTION_REQUEST.equals(intent.getAction())) {
-                enqueueUpdate(startId);
+                enqueueUpdate(intent.getStringExtra("key"));
             }
 
         } while (false);
@@ -95,14 +93,21 @@ public class DownloadService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
-    public void enqueueUpdate(int startId) {
+    public void enqueueUpdate(String key) {
+        if (mResourceDestoryed.get()) {
+            return;
+        }
+
         if (mHandler != null) {
-            mHandler.removeMessages(MSG_UPDATE);
-            mHandler.obtainMessage(MSG_UPDATE, startId, -1).sendToTarget();
+            mHandler.obtainMessage(MSG_UPDATE, key).sendToTarget();
         }
     }
 
     public void enqueueNotify(boolean delay) {
+        if (mResourceDestoryed.get()) {
+            return;
+        }
+
         if (mHandler != null) {
             mHandler.removeMessages(MSG_NOTIFY);
             if (delay) {
@@ -131,7 +136,7 @@ public class DownloadService extends Service {
                     handleNotify();
                     break;
                 case MSG_UPDATE:
-                    handleUpdate(message.arg1);
+                    handleUpdate(message.obj.toString());
                     break;
             }
 
@@ -171,7 +176,7 @@ public class DownloadService extends Service {
         enqueueNotify(true);
     }
 
-    private void handleUpdate(int startId) {
+    private void handleUpdate(String key) {
         boolean isActive = false;
 
         do {
@@ -182,56 +187,82 @@ public class DownloadService extends Service {
 
             // 处理是否还有下载
             synchronized (hawk.mRequestMap) {
-                Set<String> keys = hawk.mRequestMap.keySet();
+                Request request = hawk.mRequestMap.get(key);
+                if (request == null)
+                    break;
 
-                for (String key : keys) {
-                    Request request = hawk.mRequestMap.get(key);
+                // 新建下载
+                if (request.downloadInfo.status == -1) {
+                    isActive = true;
 
-                    // 新建下载
-                    if (request.downloadInfo.status == -1) {
-                        isActive = true;
-
-                        mExecutor.execute(new DownloadThread(startId, request, DownloadService.this));
-                    }
+                    mExecutor.execute(new DownloadThread(request, DownloadService.this));
                 }
             }
         } while (false);
 
-        if (!isActive && startId != -1) {
-            stopIfNeed(startId);
+        if (!isActive) {
+            stopIfNeed();
         }
 
-        DLogger.v(TAG, "isActive = " + isActive + ", startId = " + startId);
+        DLogger.v(TAG, "isActive = " + isActive + ", key = " + key);
+    }
+
+    void threadIncrement() {
+        int count = mThreadCount.incrementAndGet();
+        DLogger.v(TAG, "ThreadCount %d", count);
+    }
+
+    void threadDecrement() {
+        int count = mThreadCount.decrementAndGet();
+        DLogger.v(TAG, "ThreadCount %d", count);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
 
-        DLogger.w(TAG, "DownloadService onDestory");
+        mHandler.postDelayed(new Runnable() {
 
-        if (!mResourceDestoryed.get()) {
-            destoryResource();
-        }
-    }
-
-    void stopIfNeed(int startId) {
-        if (lastStartId == startId) {
-            if (stopSelfResult(startId)) {
-                enqueueNotify(false);
+            @Override
+            public void run() {
+                DLogger.w(TAG, "DownloadService onDestory");
 
                 destoryResource();
-
-                DLogger.w(TAG, "stopSelfResult(%d)", startId);
             }
+
+        },  200);
+    }
+
+    void stopIfNeed() {
+        if (mThreadCount.get() == 0) {
+            mHandler.post(new Runnable() {
+
+                @Override
+                public void run() {
+                    DLogger.w(TAG, "stopSelf");
+
+                    handleNotify();
+
+                    destoryResource();
+
+                    stopSelf();
+                }
+
+            });
+        }
+        else {
+            DLogger.i(TAG, "还有线程未执行完，不需要停止服务");
         }
     }
 
     private void destoryResource() {
+        if (mResourceDestoryed.get()) {
+            return;
+        }
+        mResourceDestoryed.set(true);
+
         try {
             DLogger.w(TAG, "DestoryResource");
-
-            mResourceDestoryed.set(true);
 
             mExecutor.shutdownNow();
             mHandlerThread.quit();

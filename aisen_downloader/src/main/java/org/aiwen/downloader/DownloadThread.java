@@ -5,7 +5,6 @@ import android.net.Uri;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Response;
 
-import org.aiwen.downloader.utils.Constants;
 import org.aiwen.downloader.utils.Utils;
 
 import java.io.File;
@@ -60,15 +59,14 @@ public class DownloadThread implements Runnable {
         }
     }
 
-    private final int mStartId;
     private final Request mRequest;
     private final DownloadService mService;
 
-    public DownloadThread(int startId, Request request, DownloadService service) {
-        mStartId = startId;
+    public DownloadThread(Request request, DownloadService service) {
         mRequest = request;
         mRequest.downloadInfo.status = Downloads.Status.STATUS_PENDING;
         mService = service;
+        mService.threadIncrement();
     }
 
     @Override
@@ -87,7 +85,8 @@ public class DownloadThread implements Runnable {
             e.printStackTrace();
         }
 
-        mService.stopIfNeed(mStartId);
+        mService.threadDecrement();
+        mService.stopIfNeed();
     }
 
     // 开始下载
@@ -133,7 +132,6 @@ public class DownloadThread implements Runnable {
 
     // 缓存数据
     private void transferData(Request request, Response response) throws DownloadException {
-        final Uri uri = request.uri;
         final DownloadInfo downloadInfo = request.downloadInfo;
         final Trace trace = request.trace;
 

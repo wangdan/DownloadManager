@@ -91,7 +91,7 @@ public class Hawk {
 
         }
 
-        DownloadService.request(mContext);
+        DownloadService.request(mContext, request);
     }
 
 }
