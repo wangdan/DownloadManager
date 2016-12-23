@@ -1,10 +1,14 @@
 <manifest package="org.aisen.downloader"
           xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <application android:allowBackup="true"
-                 android:label="@string/app_name"
-                 android:supportsRtl="true">
+    <application>
         <service android:name="org.aiwen.downloader.DownloadService"/>
+        <receiver android:name="org.aiwen.downloader.DownloadReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

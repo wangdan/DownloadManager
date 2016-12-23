@@ -94,7 +94,7 @@ public class Hawk {
 
         }
 
-        DownloadService.request(mContext, request);
+        DownloadService.request(mContext, request.key);
     }
 
     public HawkTrace getTrace() {

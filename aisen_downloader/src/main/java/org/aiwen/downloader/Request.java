@@ -46,12 +46,18 @@ public final class Request {
             case -1:
             case Downloads.Status.STATUS_PENDING:
             case Downloads.Status.STATUS_RUNNING:
+                DLogger.d(Utils.getDownloaderTAG(this), "准备下载, status(%d)", downloadInfo.status);
+
                 return true;
             // 等待重试
             case Downloads.Status.STATUS_WAITING_TO_RETRY:
                 // download was waiting for a delayed restart
                 final long now = Utils.realtime();
-                return downloadInfo.restartTime(now) <= now;
+                boolean retry = downloadInfo.restartTime(now) <= now;
+
+                DLogger.w(Utils.getDownloaderTAG(this), "第 %d 次尝试下载重连", downloadInfo.numFailed);
+
+                return retry;
             default:
                 return false;
         }
@@ -59,6 +65,22 @@ public final class Request {
 
     boolean isRunning() {
         return thread != null;
+    }
+
+    static Request create(Cursor cursor) {
+        try {
+            String uri = cursor.getString(cursor.getColumnIndexOrThrow(Downloads.Impl.COLUMN_URI));
+            String fileUri = cursor.getString(cursor.getColumnIndexOrThrow(Downloads.Impl._DATA));
+
+            Request request = new Request(Uri.parse(uri), Uri.parse(fileUri));
+            request.set(cursor);
+
+            DLogger.v(Constants.TAG, "SetRequest(%s)", request.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     void set(Cursor cursor) {
@@ -82,6 +104,8 @@ public final class Request {
         contentValues.put(Downloads.Impl.COLUMN_STATUS, downloadInfo.status);
         // URI
         contentValues.put(Downloads.Impl.COLUMN_URI, uri.toString());
+        // FILE URI
+        contentValues.put(Downloads.Impl._DATA, fileUri.toString());
         // 下载进度
         contentValues.put(Downloads.Impl.COLUMN_CURRENT_BYTES, downloadInfo.rangeBytes);
         // 文件大小

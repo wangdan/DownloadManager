@@ -1,5 +1,6 @@
 package org.aiwen.downloader;
 
+import org.aiwen.downloader.utils.Constants;
 import org.aiwen.downloader.utils.Utils;
 
 import java.io.File;
@@ -18,7 +19,7 @@ class FileManager {
      */
     static File createTempFile(Request request) throws DownloadException {
         try {
-            File tempFile = new File(request.fileUri.getPath() + ".dt");
+            File tempFile = new File(request.fileUri.getPath() + Constants.TEMP_SUFFIX);
             long rangeBytes = request.downloadInfo.rangeBytes;
 
             if (tempFile.exists()) {

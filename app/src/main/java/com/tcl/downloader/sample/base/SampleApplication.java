@@ -5,6 +5,7 @@ import org.aisen.android.common.utils.Logger;
 import org.aisen.android.component.bitmaploader.BitmapLoader;
 import org.aisen.android.ui.activity.basic.BaseActivity;
 import org.aisen.download.DownloadManager;
+import org.aiwen.downloader.Configuration;
 import org.aiwen.downloader.Hawk;
 
 /**
@@ -23,6 +24,8 @@ public class SampleApplication extends GlobalContext {
         BitmapLoader.newInstance(this, String.valueOf(getExternalFilesDir("images")));
 
         DownloadManager.setup(this, true, 3);
+
+        Hawk.setupWithConfig(this, new Configuration());
     }
 
 }

@@ -7,8 +7,6 @@ import com.tcl.downloader.sample.ui.fragment.TabsFragment;
 
 import org.aisen.android.ui.activity.basic.BaseActivity;
 import org.aisen.download.DownloadService;
-import org.aiwen.downloader.Configuration;
-import org.aiwen.downloader.Hawk;
 
 /**
  * Created by wangdan on 16/5/7.
@@ -24,8 +22,6 @@ public class SampleActivity extends BaseActivity {
         getToolbar().setTitle("应用市场");
 
         DownloadService.retryAction(this);
-
-        Hawk.setupWithConfig(SampleActivity.this, new Configuration());
 
     }
 

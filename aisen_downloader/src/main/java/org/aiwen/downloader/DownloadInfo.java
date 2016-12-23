@@ -18,7 +18,7 @@ public class DownloadInfo {
 
     int numFailed;// 下载失败次数
 
-    long lastMod;// 最后修改时间
+    long lastMod;// 最后修改时间(ms)
 
     long retryAfter;// 等待这个时间后再重试
 

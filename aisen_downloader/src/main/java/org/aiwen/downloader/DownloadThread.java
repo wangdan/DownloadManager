@@ -114,8 +114,10 @@ public class DownloadThread implements Runnable {
                     if (Utils.isNetworkActive(mService)) {
                         int numFailed = ++downloadInfo.numFailed;
                         if (numFailed <= Constants.MAX_RETRIES) {
-                            downloadInfo.retryAfter = numFailed << 2;
+                            downloadInfo.retryAfter = (numFailed << 2) * 1000;
                             downloadInfo.status = Downloads.Status.STATUS_WAITING_TO_RETRY;
+
+                            mService.setRetryAlarm(mRequest);
                         }
                         else {
                             downloadInfo.retryAfter = 0;

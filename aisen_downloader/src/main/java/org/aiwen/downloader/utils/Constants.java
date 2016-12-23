@@ -8,7 +8,10 @@ public class Constants {
 
     public static final String TAG = "Hawk";
 
-    public static final String TEMP_SUFFIX = ".atmp";
+    public static final String TEMP_SUFFIX = ".atp";
+
+    /** The intent that gets sent when the service must wake up for a retry */
+    public static final String ACTION_RETRY = "android.intent.action.DOWNLOAD_WAKEUP";
 
     /** The minimum amount of progress that has to be done before the progress bar gets updated */
     public static final int MIN_PROGRESS_STEP = 65536;

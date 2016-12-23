@@ -29,6 +29,10 @@ public class Utils {
         return Constants.TAG + "_Thread_" + request.key;
     }
 
+    public static long now() {
+        return System.currentTimeMillis();
+    }
+
     public static long realtime() {
         return SystemClock.elapsedRealtime();
     }

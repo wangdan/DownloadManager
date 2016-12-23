@@ -1,5 +1,7 @@
 package org.aiwen.downloader;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -32,9 +34,9 @@ public class DownloadService extends Service {
 
     public static final String ACTION_REQUEST = "org.aisen.downloader.ACTION_REQUEST";
 
-    public static void request(Context context, Request request) {
+    public static void request(Context context, String key) {
         Intent service = new Intent(context, DownloadService.class);
-        service.putExtra("key", request.key);
+        service.putExtra("key", key);
         service.setAction(ACTION_REQUEST);
 
         context.startService(service);
@@ -46,6 +48,7 @@ public class DownloadService extends Service {
 
     private HandlerThread mHandlerThread;
     private Handler mHandler;
+    private AlarmManager mAlarmManager;
     private ThreadPoolExecutor mExecutor;
     private AtomicBoolean mResourceDestoryed = new AtomicBoolean(false);
     private AtomicInteger mThreadCount = new AtomicInteger();
@@ -77,6 +80,7 @@ public class DownloadService extends Service {
         mHandlerThread = new HandlerThread("DownloadManager HandlerThread", Thread.MIN_PRIORITY);
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper(), mCallback);
+        mAlarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
         enqueueNotify(true);
     }
@@ -89,7 +93,7 @@ public class DownloadService extends Service {
             }
 
             if (ACTION_REQUEST.equals(intent.getAction())) {
-                enqueueUpdate(intent.getStringExtra("key"));
+                enqueueUpdate(intent.getStringExtra("key"), 0);
             }
 
         } while (false);
@@ -97,18 +101,46 @@ public class DownloadService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
-    public void enqueueUpdate(String key) {
-        if (mResourceDestoryed.get()) {
+    // 取消重连闹钟
+    void cancelRetryAlarm(Request request) {
+        DLogger.i(TAG, "取消重连闹钟, key = %s", request.key);
+
+        final Intent intent = new Intent(Constants.ACTION_RETRY);
+        intent.putExtra("key", request.key);
+        intent.setClass(this, DownloadReceiver.class);
+        mAlarmManager.cancel(PendingIntent.getBroadcast(this, (int) request.id, intent, PendingIntent.FLAG_ONE_SHOT));
+    }
+
+    // 设置这个Request的下一次下载重连闹钟
+    void setRetryAlarm(Request request) {
+        long nextActionMillis = request.downloadInfo.retryAfter;
+
+        DLogger.i(TAG, "scheduling start in %d ms, key = %s", nextActionMillis, request.key);
+
+        final Intent intent = new Intent(Constants.ACTION_RETRY);
+        intent.putExtra("key", request.key);
+        intent.setClass(this, DownloadReceiver.class);
+        mAlarmManager.set(AlarmManager.RTC_WAKEUP, Utils.now() + nextActionMillis,
+                PendingIntent.getBroadcast(this, (int) request.id, intent, PendingIntent.FLAG_ONE_SHOT));
+    }
+
+    void enqueueUpdate(String key, long delay) {
+        if (isResourceDestoryed()) {
             return;
         }
 
         if (mHandler != null) {
-            mHandler.obtainMessage(MSG_UPDATE, key).sendToTarget();
+            if (delay > 0) {
+                mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_UPDATE, key), delay);
+            }
+            else {
+                mHandler.obtainMessage(MSG_UPDATE, key).sendToTarget();
+            }
         }
     }
 
     public void enqueueNotify(boolean delay) {
-        if (mResourceDestoryed.get()) {
+        if (isResourceDestoryed()) {
             return;
         }
 
@@ -213,11 +245,22 @@ public class DownloadService extends Service {
             // 处理是否还有下载
             synchronized (hawk.mRequestMap) {
                 Request request = hawk.mRequestMap.get(key);
+                if (request == null) {
+                    request = hawk.db.query(key);
+                    if (request != null) {
+                        hawk.mRequestMap.put(key, request);
+                    }
+                }
                 if (request == null)
                     break;
 
                 // 新建下载
                 if (request.isReadyToDownload()) {
+                    // 如果正在等待下载，删除重连闹钟
+                    if (request.downloadInfo.numFailed > 0) {
+                        cancelRetryAlarm(request);
+                    }
+
                     isActive = true;
 
                     mExecutor.execute(new DownloadThread(hawk, request, DownloadService.this));
@@ -251,8 +294,25 @@ public class DownloadService extends Service {
         destoryResource();
     }
 
+    private boolean isActive() {
+        if (mThreadCount.get() > 0) {
+            DLogger.i(TAG, "存在未下载完任务");
+
+            return true;
+        }
+
+        return false;
+    }
+
     void stopIfNeed() {
-        if (mThreadCount.get() == 0) {
+        if (isResourceDestoryed()) {
+            return;
+        }
+
+        if (isActive()) {
+            DLogger.i(TAG, "服务有未完成任务，不需要停止");
+        }
+        else {
             mHandler.post(new Runnable() {
 
                 @Override
@@ -267,9 +327,10 @@ public class DownloadService extends Service {
 
             });
         }
-        else {
-            DLogger.i(TAG, "还有线程未执行完，不需要停止服务");
-        }
+    }
+
+    private boolean isResourceDestoryed() {
+        return mResourceDestoryed.get();
     }
 
     private void destoryResource() {
