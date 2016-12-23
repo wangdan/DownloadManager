@@ -87,28 +87,57 @@ public class DownloadThread implements Runnable {
         mHawk.trace.peddingThread.decrementAndGet();
         mHawk.trace.concurrentThread.incrementAndGet();
 
+        final DownloadInfo downloadInfo = mRequest.downloadInfo;
+
         try {
             // 创建临时文件
             mTempFile = FileManager.createTempFile(mRequest);
 
             mRequest.trace = new ThreadTrace(mRequest);
 
-            mRequest.downloadInfo.status = Downloads.Status.STATUS_RUNNING;
-            mRequest.downloadInfo.writeToDatabase();
+            downloadInfo.status = Downloads.Status.STATUS_RUNNING;
+            downloadInfo.writeToDatabase();
 
             DLogger.d(Utils.getDownloaderTAG(mRequest), "开始下载(%s)", mRequest.uri);
             executeDownload(mRequest);
             DLogger.d(Utils.getDownloaderTAG(mRequest), "结束下载(%s)", mRequest.uri);
 
-            mRequest.downloadInfo.status = Downloads.Status.STATUS_SUCCESS;
+            downloadInfo.status = Downloads.Status.STATUS_SUCCESS;
         } catch (DownloadException e) {
             e.printStackTrace();
 
-            mRequest.downloadInfo.status = e.getStatus();
-            mRequest.downloadInfo.error = e.getError();
-            mRequest.downloadInfo.writeToDatabase();
+            // 处理错误状态
+            switch (e.getStatus()) {
+                case Downloads.Status.STATUS_HTTP_EXCEPTION:
+                case Downloads.Status.STATUS_HTTP_DATA_ERROR:
+                    // 网络正常连接，尝试重连
+                    if (Utils.isNetworkActive(mService)) {
+                        int numFailed = ++downloadInfo.numFailed;
+                        if (numFailed <= Constants.MAX_RETRIES) {
+                            downloadInfo.retryAfter = numFailed << 2;
+                            downloadInfo.status = Downloads.Status.STATUS_WAITING_TO_RETRY;
+                        }
+                        else {
+                            downloadInfo.retryAfter = 0;
+                            downloadInfo.status = e.getStatus();
+                        }
+                    }
+                    // 没有网络连接
+                    else {
+                        downloadInfo.retryAfter = 0;
+                        downloadInfo.status = Downloads.Status.STATUS_WAITING_FOR_NETWORK;
+                    }
+                    break;
+                default:
+                    downloadInfo.status = e.getStatus();
+                    break;
+            }
+            downloadInfo.error = Downloads.Status.statusToString(downloadInfo.status);
         } finally {
             mHawk.trace.concurrentThread.decrementAndGet();
+
+            downloadInfo.lastMod = Utils.realtime();
+            downloadInfo.writeToDatabase();
         }
 
         mRequest.thread = null;
@@ -139,39 +168,35 @@ public class DownloadThread implements Runnable {
             builder.addHeader("Range", "bytes="+ downloadInfo.rangeBytes + "-");
         }
 
+        final Response response;
+        // 开始请求数据
         try {
             trace.beginConnect();
-            Response response = mOkHttpClient.newCall(builder.build()).execute();
-            trace.endConnect();
-
-            if (response.isSuccessful()) {
-                transferData(request, response);
-            }
-            else {
+            response = mOkHttpClient.newCall(builder.build()).execute();
+            if (!response.isSuccessful()) {
                 throw new DownloadException(Downloads.Status.STATUS_HTTP_EXCEPTION);
             }
-        } catch (IOException ioe) {
-            Utils.printStackTrace(ioe);
+            trace.endConnect();
+        } catch (IOException e) {
+            Utils.printStackTrace(e);
 
             throw new DownloadException(Downloads.Status.STATUS_HTTP_EXCEPTION);
-        } catch (Exception e) {
+        }
+
+        // 开始解析数据
+        try {
+            transferData(request, response);
+        } catch (IOException e) {
             Utils.printStackTrace(e);
+
+            throw new DownloadException(Downloads.Status.STATUS_HTTP_DATA_ERROR);
         }
     }
 
     // 缓存数据
-    private void transferData(Request request, Response response) throws DownloadException {
+    private void transferData(Request request, Response response) throws IOException, DownloadException {
         final DownloadInfo downloadInfo = request.downloadInfo;
         final ThreadTrace trace = request.trace;
-
-        final FileOutputStream out;
-        try {
-            out = new FileOutputStream(mTempFile, true);
-        } catch (FileNotFoundException e) {
-            Utils.printStackTrace(e);
-
-            throw new DownloadException(Downloads.Status.STATUS_FILE_ERROR);
-        }
 
         // Content-Length
         long contentLen = -1;
@@ -188,9 +213,17 @@ public class DownloadThread implements Runnable {
             downloadInfo.fileBytes = totalLen;
         }
 
-        mRequest.downloadInfo.writeToDatabase();
+        downloadInfo.writeToDatabase();
 
         InputStream in = null;
+        final FileOutputStream out;
+        try {
+            out = new FileOutputStream(mTempFile, true);
+        } catch (FileNotFoundException e) {
+            Utils.printStackTrace(e);
+
+            throw new DownloadException(Downloads.Status.STATUS_FILE_ERROR);
+        }
         try {
             in = response.body().byteStream();
             byte[] readBuffer = new byte[8 * 1024];
@@ -201,7 +234,7 @@ public class DownloadThread implements Runnable {
             while ((readLen = in.read(readBuffer)) != -1) {
                 out.write(readBuffer, 0, readLen);
 
-                mRequest.downloadInfo.rangeBytes += readLen;
+                downloadInfo.rangeBytes += readLen;
                 trace.receive(readLen);
 
                 final long now = SystemClock.elapsedRealtime();
@@ -211,7 +244,12 @@ public class DownloadThread implements Runnable {
                 final long bytesDelta = currentBytes - mLastUpdateBytes;
                 final long timeDelta = now - mLastUpdateTime;
                 if (bytesDelta > Constants.MIN_PROGRESS_STEP && timeDelta > Constants.MIN_PROGRESS_TIME) {
-                    mRequest.downloadInfo.writeToDatabase();
+                    // 正常下载数据后，将下载失败次数清零
+                    if (downloadInfo.numFailed > 0) {
+                        downloadInfo.numFailed = 0;
+                        downloadInfo.retryAfter = 0;
+                    }
+                    downloadInfo.writeToDatabase();
 
                     mLastUpdateBytes = currentBytes;
                     mLastUpdateTime = now;
@@ -220,13 +258,7 @@ public class DownloadThread implements Runnable {
             trace.endRead();
 
             out.flush();
-        } catch (IOException e) {
-            Utils.printStackTrace(e);
-
-            throw new DownloadException(Downloads.Status.STATUS_HTTP_DATA_ERROR);
         } finally {
-            mRequest.downloadInfo.writeToDatabase();
-
             Utils.close(in);
             Utils.close(out);
         }

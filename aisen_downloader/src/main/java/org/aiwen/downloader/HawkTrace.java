@@ -9,6 +9,8 @@ public class HawkTrace {
 
     volatile float speed;// 当前所有下载数据的即时速度
     volatile float averageSpeed;// 当前所有下载数据的平均速度
+    volatile float visibleSpeed;// 通知栏可见下载的即时速度
+    volatile float visibleAverageSpeed;// 通知栏可见下载的评价速度
     AtomicInteger concurrentThread = new AtomicInteger();// 正在下载的任务数
     AtomicInteger peddingThread = new AtomicInteger();// 正在等待下载的任务数
 

@@ -24,13 +24,9 @@ public class DownloadException extends Exception {
         return status;
     }
 
-    public String getError() {
-        return Downloads.Status.statusToString(status);
-    }
-
     @Override
     public String toString() {
-        return super.toString() + String.format(": status(%d), error(%s)", status, getError());
+        return super.toString() + String.format(": status(%d), error(%s)", status, Downloads.Status.statusToString(status));
     }
 
 }

@@ -1,6 +1,6 @@
 package org.aiwen.downloader;
 
-import android.os.SystemClock;
+import static org.aiwen.downloader.utils.Utils.realtime;
 
 /**
  * Created by 王dan on 2016/12/21.
@@ -99,10 +99,6 @@ public class ThreadTrace {
 
     public long getRealTime() {
         return readE - connectS;
-    }
-
-    private long realtime() {
-        return SystemClock.elapsedRealtime();
     }
 
 }

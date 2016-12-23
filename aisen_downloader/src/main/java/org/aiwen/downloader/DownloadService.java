@@ -217,7 +217,7 @@ public class DownloadService extends Service {
                     break;
 
                 // 新建下载
-                if (request.downloadInfo.status == -1 || !request.isRunning()) {
+                if (request.isReadyToDownload()) {
                     isActive = true;
 
                     mExecutor.execute(new DownloadThread(hawk, request, DownloadService.this));

@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.net.Uri;
 
 import org.aiwen.downloader.utils.Constants;
+import org.aiwen.downloader.utils.Utils;
 
 /**
  * 下载请求
@@ -33,6 +34,27 @@ public final class Request {
         this.fileUri = fileUri;
         key = KeyGenerator.generateMD5(this.uri.toString());
         downloadInfo = new DownloadInfo(this);
+    }
+
+    boolean isReadyToDownload() {
+        if (isRunning()) {
+            return false;
+        }
+
+        switch (downloadInfo.status) {
+            // 可以下载
+            case -1:
+            case Downloads.Status.STATUS_PENDING:
+            case Downloads.Status.STATUS_RUNNING:
+                return true;
+            // 等待重试
+            case Downloads.Status.STATUS_WAITING_TO_RETRY:
+                // download was waiting for a delayed restart
+                final long now = Utils.realtime();
+                return downloadInfo.restartTime(now) <= now;
+            default:
+                return false;
+        }
     }
 
     boolean isRunning() {

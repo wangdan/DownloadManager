@@ -26,6 +26,7 @@ public class SampleActivity extends BaseActivity {
         DownloadService.retryAction(this);
 
         Hawk.setupWithConfig(SampleActivity.this, new Configuration());
+
     }
 
 }

@@ -16,6 +16,12 @@ public class DownloadInfo {
 
     long fileBytes = -1;// 文件总长度
 
+    int numFailed;// 下载失败次数
+
+    long lastMod;// 最后修改时间
+
+    long retryAfter;// 等待这个时间后再重试
+
     public DownloadInfo(Request request) {
         mRequest = request;
     }
@@ -25,6 +31,20 @@ public class DownloadInfo {
         if (hawk != null) {
             hawk.db.update(mRequest);
         }
+    }
+
+    /**
+     * 每次失败后，准备
+     */
+    long restartTime(long now) {
+        if (numFailed == 0) {
+            return now;
+        }
+        if (retryAfter > 0) {
+            return lastMod + retryAfter;
+        }
+
+        return Long.MAX_VALUE;
     }
 
 }
