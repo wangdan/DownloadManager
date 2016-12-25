@@ -17,6 +17,10 @@ public class ThreadTrace {
 
     private long readE;
 
+    private float speed;// 下载速度
+
+    private float averageSpeed;// 平均下载速度
+
     private long speedCountS;
 
     private long speedCountE;
@@ -64,9 +68,28 @@ public class ThreadTrace {
     }
 
     public float getAverageSpeed() {
+        return averageSpeed;
+    }
+
+    public float getSpeed() {
+        return speed;
+    }
+
+    void computeSpeed() {
+        // 计算即时速度
         float speed = 0.0f;
 
-        long time;
+        long time = speedCountE - speedCountS;
+
+        if (time > 0) {
+            speed = (speedCount[1] - speedCount[0]) * 1.0f / 1024 / (time * 1.0f / 1000);
+        }
+
+        this.speed = speed;
+
+        // 计算平均速度
+        speed = 0.0f;
+
         if (readE == 0) {
             time = realtime() - readS;
         }
@@ -78,19 +101,7 @@ public class ThreadTrace {
             speed = receiveSize * 1.0f / 1024 / (time * 1.0f / 1000);
         }
 
-        return speed;
-    }
-
-    public float getSpeed() {
-        float speed = 0.0f;
-
-        long time = speedCountE - speedCountS;
-
-        if (time > 0) {
-            speed = (speedCount[1] - speedCount[0]) * 1.0f / 1024 / (time * 1.0f / 1000);
-        }
-
-        return speed;
+        this.averageSpeed = speed;
     }
 
     public long getTime() {

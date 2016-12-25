@@ -15,7 +15,6 @@ import android.text.TextUtils;
 import org.aiwen.downloader.utils.Constants;
 import org.aiwen.downloader.utils.Utils;
 
-import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -137,7 +136,7 @@ public class DownloadService extends Service {
         }
     }
 
-    void enqueueNotify1(Request request) {
+    void enqueueNotify(Request request) {
         if (isResourceDestoryed()) {
             return;
         }
@@ -165,12 +164,12 @@ public class DownloadService extends Service {
             int what = message.what;
 
             switch (what) {
-                case MSG_NOTIFY:
-                    if (message.obj != null) {
-                        handleRequestNotify(message.obj.toString());
-                    }
-                    handleNotify();
-                    break;
+//                case MSG_NOTIFY:
+//                    if (message.obj != null) {
+//                        handleRequestNotify(message.obj.toString());
+//                    }
+//                    handleNotify();
+//                    break;
                 case MSG_UPDATE:
                     handleUpdate(message.obj.toString());
                     break;
@@ -180,68 +179,6 @@ public class DownloadService extends Service {
         }
 
     };
-
-    private void handleRequestNotify(String key) {
-        Hawk hawk = Hawk.getInstance();
-        if (hawk != null) {
-            Request request = hawk.mRequestMap.get(key);
-            if (request != null) {
-                hawk.notifyStatus(request);
-            }
-        }
-    }
-
-    private void handleNotify() {
-        // 处理是否还有下载
-        Hawk hawk = Hawk.getInstance();
-        if (hawk == null) {
-            return;
-        }
-
-        Set<String> keys = hawk.mRequestMap.keySet();
-
-        float speed = 0.0f;
-        float averageSpeed = 0.0f;
-        for (String key : keys) {
-            Request request = hawk.mRequestMap.get(key);
-
-            boolean notifyEvent = false;
-
-            // 正在下载
-            if (Downloads.Status.isStatusRunning(request.downloadInfo.status)) {
-                notifyEvent = true;
-
-                if (request.trace != null) {
-                    synchronized (request.trace) {
-                        request.trace.endSpeedCount();
-                        DLogger.v(Utils.getDownloaderTAG(request), "下载速度(%d), 平均速度(%d)", (int) request.trace.getSpeed(), (int) request.trace.getAverageSpeed());
-                        speed += request.trace.getSpeed();
-                        averageSpeed += request.trace.getAverageSpeed();
-                        request.trace.beginSpeedCount();
-                    }
-                }
-            }
-            else if (Downloads.Status.isStatusError(request.downloadInfo.status)) {
-                notifyEvent = true;
-
-                DLogger.e(Utils.getDownloaderTAG(request), "下载失败(%d, %s)", request.downloadInfo.status, request.downloadInfo.error);
-            }
-            else if (Downloads.Status.isStatusSuccess(request.downloadInfo.status)) {
-                if (request.trace != null) {
-                    DLogger.v(Utils.getDownloaderTAG(request), "下载结束，下载耗时 %d ms， 总耗时 %d ms，平均速度 %d kb/s", request.trace.getTime(), request.trace.getRealTime(), (int) request.trace.getAverageSpeed());
-                }
-            }
-
-            if (notifyEvent) {
-                // TODO
-            }
-        }
-        hawk.trace.speed = speed;
-        hawk.trace.averageSpeed = averageSpeed;
-        DLogger.v(TAG, "%d 个任务下载中, %d 个任务等待中", hawk.trace.concurrentThread.get(), hawk.trace.peddingThread.get());
-
-        enqueueNotify(null);
-    }
 
     private void handleUpdate(String key) {
         boolean isActive = false;
@@ -327,7 +264,11 @@ public class DownloadService extends Service {
 
                 @Override
                 public void run() {
-                    handleNotify();
+                    // 结束之前，再广播一次状态更新
+                    Hawk hawk = Hawk.getInstance();
+                    if (hawk != null) {
+                        hawk.notifyAllStatus();
+                    }
 
                     destoryResource();
 

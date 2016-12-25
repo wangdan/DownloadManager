@@ -2,8 +2,11 @@ package org.aiwen.downloader;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -32,6 +35,8 @@ public class Hawk implements IDownloadSubject {
         return mInstance;
     }
 
+    private final Handler mHandler;
+
     private final Configuration mConfig;
 
     private final Context mContext;
@@ -50,6 +55,7 @@ public class Hawk implements IDownloadSubject {
         }
 
         mContext = context;
+        mHandler = new Handler(Looper.getMainLooper());
         mConfig = config;
         mRequestMap = new ConcurrentHashMap<>();
         db = new DownloadDB(context);
@@ -109,9 +115,16 @@ public class Hawk implements IDownloadSubject {
         return trace;
     }
 
+    public Context getContext() {
+        return mContext;
+    }
+
     @Override
     public void attach(IDownloadObserver observer) {
         Request request = observer.getRequest();
+        if (request == null) {
+            return;
+        }
 
         RequestSubject requestSubject = mRequestSubjects.get(request.key);
         if (requestSubject == null) {
@@ -126,6 +139,9 @@ public class Hawk implements IDownloadSubject {
     @Override
     public void detach(IDownloadObserver observer) {
         Request request = observer.getRequest();
+        if (request == null) {
+            return;
+        }
 
         RequestSubject requestSubject = mRequestSubjects.get(request.key);
         if (requestSubject == null) {
@@ -140,10 +156,29 @@ public class Hawk implements IDownloadSubject {
     }
 
     @Override
-    public void notifyStatus(Request request) {
-        RequestSubject requestSubject = mRequestSubjects.get(request.key);
+    public void notifyStatus(final Request request) {
+        if (request == null) {
+            return;
+        }
+
+        final RequestSubject requestSubject = mRequestSubjects.get(request.key);
         if (requestSubject != null) {
-            requestSubject.notifyStatus(request);
+            // 在UI线程中更新状态
+            mHandler.post(new Runnable() {
+
+                @Override
+                public void run() {
+                    requestSubject.notifyStatus(request);
+                }
+
+            });
+        }
+    }
+
+    public void notifyAllStatus() {
+        Set<String> keySet = mRequestSubjects.keySet();
+        for (String key : keySet) {
+            notifyStatus(mRequestMap.get(key));
         }
     }
 

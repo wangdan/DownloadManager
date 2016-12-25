@@ -96,7 +96,7 @@ public class DownloadThread implements Runnable {
             mRequest.trace = new ThreadTrace(mRequest);
 
             downloadInfo.status = Downloads.Status.STATUS_RUNNING;
-            downloadInfo.writeToDatabase(mHawk.db, mService);
+            downloadInfo.writeToDatabase();
 
             DLogger.d(Utils.getDownloaderTAG(mRequest), "开始下载(%s)", mRequest.uri);
             executeDownload(mRequest);
@@ -111,7 +111,7 @@ public class DownloadThread implements Runnable {
                 case Downloads.Status.STATUS_HTTP_EXCEPTION:
                 case Downloads.Status.STATUS_HTTP_DATA_ERROR:
                     // 网络正常连接，尝试重连
-                    if (Utils.isNetworkActive(mService)) {
+                    if (Utils.isNetworkActive()) {
                         int numFailed = ++downloadInfo.numFailed;
                         if (numFailed <= Constants.MAX_RETRIES) {
                             downloadInfo.retryAfter = (numFailed << 2) * 1000;
@@ -139,7 +139,7 @@ public class DownloadThread implements Runnable {
             mHawk.trace.concurrentThread.decrementAndGet();
 
             downloadInfo.lastMod = Utils.realtime();
-            downloadInfo.writeToDatabase(mHawk.db, mService);
+            downloadInfo.writeToDatabase();
         }
 
         mRequest.thread = null;
@@ -174,13 +174,18 @@ public class DownloadThread implements Runnable {
         // 开始请求数据
         try {
             trace.beginConnect();
+
             response = mOkHttpClient.newCall(builder.build()).execute();
             if (!response.isSuccessful()) {
                 throw new DownloadException(Downloads.Status.STATUS_HTTP_EXCEPTION);
             }
+
             trace.endConnect();
         } catch (IOException e) {
             Utils.printStackTrace(e);
+
+            trace.endConnect();
+            trace.endRead();
 
             throw new DownloadException(Downloads.Status.STATUS_HTTP_EXCEPTION);
         }
@@ -190,6 +195,10 @@ public class DownloadThread implements Runnable {
             transferData(request, response);
         } catch (IOException e) {
             Utils.printStackTrace(e);
+
+            trace.endSpeedCount();
+            trace.computeSpeed();
+            trace.endRead();
 
             throw new DownloadException(Downloads.Status.STATUS_HTTP_DATA_ERROR);
         }
@@ -215,7 +224,7 @@ public class DownloadThread implements Runnable {
             downloadInfo.fileBytes = totalLen;
         }
 
-        downloadInfo.writeToDatabase(mHawk.db, mService);
+        downloadInfo.writeToDatabase();
 
         InputStream in = null;
         final FileOutputStream out;
@@ -251,10 +260,14 @@ public class DownloadThread implements Runnable {
                         downloadInfo.numFailed = 0;
                         downloadInfo.retryAfter = 0;
                     }
-                    downloadInfo.writeToDatabase(mHawk.db, mService);
+                    downloadInfo.writeToDatabase();
 
                     mLastUpdateBytes = currentBytes;
                     mLastUpdateTime = now;
+
+                    trace.endSpeedCount();
+                    trace.computeSpeed();
+                    trace.beginSpeedCount();
                 }
             }
             trace.endRead();

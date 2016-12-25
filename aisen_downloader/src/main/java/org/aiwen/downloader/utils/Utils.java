@@ -6,6 +6,7 @@ import android.net.NetworkInfo;
 import android.os.SystemClock;
 
 import org.aiwen.downloader.DLogger;
+import org.aiwen.downloader.Hawk;
 import org.aiwen.downloader.Request;
 
 import java.io.Closeable;
@@ -42,11 +43,30 @@ public class Utils {
         DLogger.printExc(Utils.class, e);
     }
 
-    public static boolean isNetworkActive(Context context) {
-        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+    public static boolean isNetworkActive() {
+        Hawk hawk = Hawk.getInstance();
+        if (hawk != null) {
+            ConnectivityManager connectivityManager = (ConnectivityManager) hawk.getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
 
-        return networkInfo != null && networkInfo.isConnected();
+            return networkInfo != null && networkInfo.isConnected();
+        }
+
+        return false;
+    }
+
+    public static boolean isWifiActive() {
+        Hawk hawk = Hawk.getInstance();
+        if (hawk != null) {
+            ConnectivityManager connectivityManager = (ConnectivityManager) hawk.getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+
+            return networkInfo != null &&
+                        networkInfo.getType() == ConnectivityManager.TYPE_WIFI &&
+                        networkInfo.isConnected();
+        }
+
+        return false;
     }
 
 }

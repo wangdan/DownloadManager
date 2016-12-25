@@ -58,6 +58,10 @@ public final class Request {
                 DLogger.w(Utils.getDownloaderTAG(this), "第 %d 次尝试下载重连", downloadInfo.numFailed);
 
                 return retry;
+            // 等待网络重连
+            case Downloads.Status.STATUS_WAITING_FOR_NETWORK:
+            case Downloads.Status.STATUS_QUEUED_FOR_WIFI:
+                return Utils.isWifiActive();
             default:
                 return false;
         }
@@ -120,12 +124,22 @@ public final class Request {
         return contentValues;
     }
 
+    public DownloadInfo getDownloadInfo() {
+        return downloadInfo;
+    }
+
+    public ThreadTrace getTrace() {
+        return trace;
+    }
+
     @Override
     public String toString() {
         return new StringBuffer()
                 .append("key = ").append(key)
                 .append(", id = ").append(id)
-                .append(", status = ").append(downloadInfo.status)
+                .append(", status = ").append(Downloads.Status.statusToString(downloadInfo.status))
+                .append(", numFailed = ").append(downloadInfo.numFailed)
+                .append(", retryAfter = ").append(downloadInfo.retryAfter)
                 .append(", rangeBytes = ").append(downloadInfo.rangeBytes)
                 .append(", fileBytes = ").append(downloadInfo.fileBytes)
                 .append(", uri = ").append(uri.toString())

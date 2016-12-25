@@ -26,12 +26,13 @@ public class DownloadInfo {
         mRequest = request;
     }
 
-    void writeToDatabase(DownloadDB db, DownloadService service) {
-        if (db != null) {
-            db.update(mRequest);
-        }
-        if (service != null) {
-            service.enqueueNotify(mRequest);
+    void writeToDatabase() {
+        Hawk hawk = Hawk.getInstance();
+
+        if (hawk != null) {
+            hawk.notifyStatus(mRequest);
+
+            hawk.db.update(mRequest);
         }
     }
 
@@ -47,6 +48,34 @@ public class DownloadInfo {
         }
 
         return Long.MAX_VALUE;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public long getRangeBytes() {
+        return rangeBytes;
+    }
+
+    public long getFileBytes() {
+        return fileBytes;
+    }
+
+    public int getNumFailed() {
+        return numFailed;
+    }
+
+    public long getLastMod() {
+        return lastMod;
+    }
+
+    public long getRetryAfter() {
+        return retryAfter;
     }
 
 }

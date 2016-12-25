@@ -27,6 +27,7 @@ import org.aisen.download.DownloadMsg;
 import org.aisen.download.IDownloadObserver;
 import org.aisen.download.IDownloadSubject;
 import org.aisen.download.Request;
+import org.aiwen.downloader.DLogger;
 import org.aiwen.downloader.Hawk;
 import org.aiwen.downloader.KeyGenerator;
 
@@ -84,6 +85,8 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
             }
             mApp = app;
             mProxy.attach(this);
+
+            Hawk.getInstance().attach(this);
         }
 
         mTitle.setText(app.getName());
@@ -291,6 +294,18 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
 
     @Override
     public void onStatusChanged(org.aiwen.downloader.Request request) {
+            // 正在下载
+            if (org.aiwen.downloader.Downloads.Status.isStatusRunning(request.getDownloadInfo().getStatus())) {
+                DLogger.v(org.aiwen.downloader.utils.Utils.getDownloaderTAG(request), "下载速度(%d), 平均速度(%d)", (int) request.getTrace().getSpeed(), (int) request.getTrace().getAverageSpeed());
+            }
+            else if (org.aiwen.downloader.Downloads.Status.isStatusError(request.getDownloadInfo().getStatus())) {
+                DLogger.e(org.aiwen.downloader.utils.Utils.getDownloaderTAG(request), "下载失败(%d, %s)", request.getDownloadInfo().getStatus(), request.getDownloadInfo().getError());
+            }
+            else if (!org.aiwen.downloader.Downloads.Status.isStatusRunning(request.getDownloadInfo().getStatus())) {
+                if (request.getTrace() != null) {
+                    DLogger.v(org.aiwen.downloader.utils.Utils.getDownloaderTAG(request), "下载结束，下载耗时 %d ms， 总耗时 %d ms，平均速度 %d kb/s", request.getTrace().getTime(), request.getTrace().getRealTime(), (int) request.getTrace().getAverageSpeed());
+                }
+            }
     }
 
 }
