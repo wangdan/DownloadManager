@@ -41,9 +41,7 @@ public class DownloadService extends Service {
         context.startService(service);
     }
 
-    final int NOTIFY_INTERVAL = 700;// 间隔刷新Download_Observer的时间
     final int MSG_UPDATE = 1000;
-    final int MSG_NOTIFY = 1001;
 
     private HandlerThread mHandlerThread;
     private Handler mHandler;
@@ -139,21 +137,6 @@ public class DownloadService extends Service {
         }
     }
 
-    void enqueueNotify(Request request) {
-        if (isResourceDestoryed()) {
-            return;
-        }
-
-        if (mHandler != null) {
-            if (request != null) {
-                mHandler.obtainMessage(MSG_NOTIFY, request.key).sendToTarget();
-            }
-            else {
-                mHandler.removeMessages(MSG_NOTIFY);
-            }
-        }
-    }
-
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -167,12 +150,6 @@ public class DownloadService extends Service {
             int what = message.what;
 
             switch (what) {
-//                case MSG_NOTIFY:
-//                    if (message.obj != null) {
-//                        handleRequestNotify(message.obj.toString());
-//                    }
-//                    handleNotify();
-//                    break;
                 case MSG_UPDATE:
                     handleUpdate(message.obj.toString());
                     break;
