@@ -35,7 +35,7 @@ import java.io.File;
 /**
  * Created by wangdan on 16/5/13.
  */
-public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.OnClickListener, IDownloadObserver {
+public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.OnClickListener, IDownloadObserver, org.aiwen.downloader.IDownloadObserver {
 
     static final String TAG = "AppItemView";
 
@@ -117,13 +117,7 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
     public void onClick(View v) {
         if (v == mActionButton) {
             if (true) {
-                AppBean app = (AppBean) mActionButton.getTag();
-
-                Uri uri = Uri.parse(app.getApk_url());
-                Uri fileUri = Uri.fromFile(new File(getContext().getExternalFilesDir("apks") + File.separator + KeyGenerator.generateMD5(uri.toString()) + ".apk"));
-                org.aiwen.downloader.Request request = Hawk.create(uri, fileUri);
-
-                Hawk.getInstance().enqueue(request);
+                Hawk.getInstance().enqueue(getRequest());
 
                 return;
             }
@@ -281,6 +275,22 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
                 R.color.download_btn_progress));
         mActionButton.setProgress(Math.round(progress * 100.0f / total));
         mActionButton.invalidate();
+    }
+
+    @Override
+    public org.aiwen.downloader.Request getRequest() {
+        if (mApp == null)
+            return null;
+
+        Uri uri = Uri.parse(mApp.getApk_url());
+        Uri fileUri = Uri.fromFile(new File(getContext().getExternalFilesDir("apks") + File.separator + KeyGenerator.generateMD5(uri.toString()) + ".apk"));
+        org.aiwen.downloader.Request request = Hawk.create(uri, fileUri);
+
+        return request;
+    }
+
+    @Override
+    public void onStatusChanged(org.aiwen.downloader.Request request) {
     }
 
 }

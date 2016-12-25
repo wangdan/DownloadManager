@@ -96,7 +96,7 @@ public class DownloadThread implements Runnable {
             mRequest.trace = new ThreadTrace(mRequest);
 
             downloadInfo.status = Downloads.Status.STATUS_RUNNING;
-            downloadInfo.writeToDatabase();
+            downloadInfo.writeToDatabase(mHawk.db, mService);
 
             DLogger.d(Utils.getDownloaderTAG(mRequest), "开始下载(%s)", mRequest.uri);
             executeDownload(mRequest);
@@ -139,7 +139,7 @@ public class DownloadThread implements Runnable {
             mHawk.trace.concurrentThread.decrementAndGet();
 
             downloadInfo.lastMod = Utils.realtime();
-            downloadInfo.writeToDatabase();
+            downloadInfo.writeToDatabase(mHawk.db, mService);
         }
 
         mRequest.thread = null;
@@ -215,7 +215,7 @@ public class DownloadThread implements Runnable {
             downloadInfo.fileBytes = totalLen;
         }
 
-        downloadInfo.writeToDatabase();
+        downloadInfo.writeToDatabase(mHawk.db, mService);
 
         InputStream in = null;
         final FileOutputStream out;
@@ -251,7 +251,7 @@ public class DownloadThread implements Runnable {
                         downloadInfo.numFailed = 0;
                         downloadInfo.retryAfter = 0;
                     }
-                    downloadInfo.writeToDatabase();
+                    downloadInfo.writeToDatabase(mHawk.db, mService);
 
                     mLastUpdateBytes = currentBytes;
                     mLastUpdateTime = now;

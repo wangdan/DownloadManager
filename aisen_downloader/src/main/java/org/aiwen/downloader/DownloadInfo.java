@@ -26,10 +26,12 @@ public class DownloadInfo {
         mRequest = request;
     }
 
-    void writeToDatabase() {
-        Hawk hawk = Hawk.getInstance();
-        if (hawk != null) {
-            hawk.db.update(mRequest);
+    void writeToDatabase(DownloadDB db, DownloadService service) {
+        if (db != null) {
+            db.update(mRequest);
+        }
+        if (service != null) {
+            service.enqueueNotify(mRequest);
         }
     }
 

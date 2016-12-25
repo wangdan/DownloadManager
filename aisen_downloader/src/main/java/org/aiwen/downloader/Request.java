@@ -67,6 +67,12 @@ public final class Request {
         return thread != null;
     }
 
+    static Request copy(Request request) {
+        Request copyRequest = new Request(request.uri, request.fileUri);
+
+        return copyRequest;
+    }
+
     static Request create(Cursor cursor) {
         try {
             String uri = cursor.getString(cursor.getColumnIndexOrThrow(Downloads.Impl.COLUMN_URI));
@@ -96,7 +102,7 @@ public final class Request {
         }
     }
 
-    public ContentValues getContentValues() {
+    ContentValues getContentValues() {
         ContentValues contentValues = new ContentValues();
 
         contentValues.put(Downloads.Impl.COLUMN_KEY, key);

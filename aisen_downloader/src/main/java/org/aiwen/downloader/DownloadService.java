@@ -81,8 +81,6 @@ public class DownloadService extends Service {
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper(), mCallback);
         mAlarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-
-        enqueueNotify(true);
     }
 
     @Override
@@ -139,18 +137,17 @@ public class DownloadService extends Service {
         }
     }
 
-    public void enqueueNotify(boolean delay) {
+    void enqueueNotify1(Request request) {
         if (isResourceDestoryed()) {
             return;
         }
 
         if (mHandler != null) {
-            mHandler.removeMessages(MSG_NOTIFY);
-            if (delay) {
-                mHandler.sendEmptyMessageDelayed(MSG_NOTIFY, NOTIFY_INTERVAL);
+            if (request != null) {
+                mHandler.obtainMessage(MSG_NOTIFY, request.key).sendToTarget();
             }
             else {
-                mHandler.obtainMessage(MSG_NOTIFY).sendToTarget();
+                mHandler.removeMessages(MSG_NOTIFY);
             }
         }
     }
@@ -169,6 +166,9 @@ public class DownloadService extends Service {
 
             switch (what) {
                 case MSG_NOTIFY:
+                    if (message.obj != null) {
+                        handleRequestNotify(message.obj.toString());
+                    }
                     handleNotify();
                     break;
                 case MSG_UPDATE:
@@ -180,6 +180,16 @@ public class DownloadService extends Service {
         }
 
     };
+
+    private void handleRequestNotify(String key) {
+        Hawk hawk = Hawk.getInstance();
+        if (hawk != null) {
+            Request request = hawk.mRequestMap.get(key);
+            if (request != null) {
+                hawk.notifyStatus(request);
+            }
+        }
+    }
 
     private void handleNotify() {
         // 处理是否还有下载
@@ -230,7 +240,7 @@ public class DownloadService extends Service {
         hawk.trace.averageSpeed = averageSpeed;
         DLogger.v(TAG, "%d 个任务下载中, %d 个任务等待中", hawk.trace.concurrentThread.get(), hawk.trace.peddingThread.get());
 
-        enqueueNotify(true);
+        enqueueNotify(null);
     }
 
     private void handleUpdate(String key) {

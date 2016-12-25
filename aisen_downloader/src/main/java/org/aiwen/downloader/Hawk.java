@@ -5,11 +5,12 @@ import android.net.Uri;
 import android.support.annotation.NonNull;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Created by 王dan on 2016/12/17.
  */
-public class Hawk {
+public class Hawk implements IDownloadSubject {
 
     private static Hawk mInstance;
 
@@ -35,6 +36,8 @@ public class Hawk {
 
     private final Context mContext;
 
+    private final ConcurrentMap<String, RequestSubject> mRequestSubjects;
+
     final DownloadDB db;
 
     final HawkTrace trace;
@@ -51,6 +54,7 @@ public class Hawk {
         mRequestMap = new ConcurrentHashMap<>();
         db = new DownloadDB(context);
         trace = new HawkTrace();
+        mRequestSubjects = new ConcurrentHashMap<>();
 
         DLogger.w("Hawk new instance");
     }
@@ -77,28 +81,70 @@ public class Hawk {
     public void enqueue(Request request) {
         // 已经有正在进行的请求了
         synchronized (mRequestMap) {
-            if (mRequestMap.containsKey(request.key)
-                    || db.exist(request)) {
+            Request copyRequest = mRequestMap.get(request.key);
+            if (copyRequest == null) {
+                copyRequest = Request.copy(request);
+            }
+
+            if (mRequestMap.containsKey(copyRequest.key)
+                    || db.exist(copyRequest)) {
                 // 更新下载
-                db.update(request);
+                db.update(copyRequest);
             }
             else {
                 // 新增下载
-                db.insert(request);
+                db.insert(copyRequest);
             }
 
             // 放在内存中
-            if (!mRequestMap.containsKey(request.key)) {
-                mRequestMap.put(request.key, request);
+            if (!mRequestMap.containsKey(copyRequest.key)) {
+                mRequestMap.put(copyRequest.key, copyRequest);
             }
 
+            DownloadService.request(mContext, copyRequest.key);
         }
-
-        DownloadService.request(mContext, request.key);
     }
 
     public HawkTrace getTrace() {
         return trace;
+    }
+
+    @Override
+    public void attach(IDownloadObserver observer) {
+        Request request = observer.getRequest();
+
+        RequestSubject requestSubject = mRequestSubjects.get(request.key);
+        if (requestSubject == null) {
+            requestSubject = new RequestSubject();
+
+            mRequestSubjects.put(request.key, requestSubject);
+        }
+
+        requestSubject.attach(observer);
+    }
+
+    @Override
+    public void detach(IDownloadObserver observer) {
+        Request request = observer.getRequest();
+
+        RequestSubject requestSubject = mRequestSubjects.get(request.key);
+        if (requestSubject == null) {
+            return;
+        }
+
+        requestSubject.detach(observer);
+
+        if (requestSubject.empty()) {
+            mRequestSubjects.remove(request.key);
+        }
+    }
+
+    @Override
+    public void notifyStatus(Request request) {
+        RequestSubject requestSubject = mRequestSubjects.get(request.key);
+        if (requestSubject != null) {
+            requestSubject.notifyStatus(request);
+        }
     }
 
 }
