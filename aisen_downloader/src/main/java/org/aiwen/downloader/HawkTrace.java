@@ -1,5 +1,6 @@
 package org.aiwen.downloader;
 
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -7,10 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HawkTrace {
 
-    volatile float speed;// 当前所有下载数据的即时速度
-    volatile float averageSpeed;// 当前所有下载数据的平均速度
-    volatile float visibleSpeed;// 通知栏可见下载的即时速度
-    volatile float visibleAverageSpeed;// 通知栏可见下载的评价速度
     AtomicInteger concurrentThread = new AtomicInteger();// 正在下载的任务数
     AtomicInteger peddingThread = new AtomicInteger();// 正在等待下载的任务数
 
@@ -20,6 +17,20 @@ public class HawkTrace {
      * @return
      */
     public float getSpeed() {
+        float speed = 0.0f;
+
+        Hawk hawk = Hawk.getInstance();
+        if (hawk != null) {
+            synchronized (hawk.mRequestMap) {
+                Set<String> keySet = hawk.mRequestMap.keySet();
+                for (String key : keySet) {
+                    Request request = hawk.mRequestMap.get(key);
+
+                    speed += request.trace.getSpeed();
+                }
+            }
+        }
+
         return speed;
     }
 
@@ -29,6 +40,20 @@ public class HawkTrace {
      * @return
      */
     public float getAverageSpeed() {
+        float averageSpeed = 0.0f;
+
+        Hawk hawk = Hawk.getInstance();
+        if (hawk != null) {
+            synchronized (hawk.mRequestMap) {
+                Set<String> keySet = hawk.mRequestMap.keySet();
+                for (String key : keySet) {
+                    Request request = hawk.mRequestMap.get(key);
+
+                    averageSpeed += request.trace.getAverageSpeed();
+                }
+            }
+        }
+
         return averageSpeed;
     }
 

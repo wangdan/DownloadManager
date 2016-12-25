@@ -28,6 +28,7 @@ import org.aisen.download.IDownloadObserver;
 import org.aisen.download.IDownloadSubject;
 import org.aisen.download.Request;
 import org.aiwen.downloader.DLogger;
+import org.aiwen.downloader.Downloads;
 import org.aiwen.downloader.Hawk;
 import org.aiwen.downloader.KeyGenerator;
 
@@ -294,17 +295,47 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
 
     @Override
     public void onStatusChanged(org.aiwen.downloader.Request request) {
+            // 等待下载
+            if (request.getDownloadInfo().getStatus() == Downloads.Status.STATUS_PENDING ||
+                    request.getDownloadInfo().getStatus() == Downloads.Status.STATUS_WAITING_TO_RETRY) {
+                mActionButton.setText("等待");
+                mIntroduce.setText(mApp.getmEditRecommend() + "");
+
+                setButtonNormal();
+            }
             // 正在下载
-            if (org.aiwen.downloader.Downloads.Status.isStatusRunning(request.getDownloadInfo().getStatus())) {
+            else if (request.getDownloadInfo().getStatus() == Downloads.Status.STATUS_RUNNING) {
                 DLogger.v(org.aiwen.downloader.utils.Utils.getDownloaderTAG(request), "下载速度(%d), 平均速度(%d)", (int) request.getTrace().getSpeed(), (int) request.getTrace().getAverageSpeed());
+
+                mActionButton.setText(Math.round(request.getDownloadInfo().getRangeBytes() * 100.0f / request.getDownloadInfo().getFileBytes()) + "%");
+                mIntroduce.setText(String.format("下载速度 %d Kb/s", (int) request.getTrace().getSpeed()));
+
+                setButtonProgress(request.getDownloadInfo().getRangeBytes(), request.getDownloadInfo().getFileBytes());
             }
+            // 下载失败
             else if (org.aiwen.downloader.Downloads.Status.isStatusError(request.getDownloadInfo().getStatus())) {
-                DLogger.e(org.aiwen.downloader.utils.Utils.getDownloaderTAG(request), "下载失败(%d, %s)", request.getDownloadInfo().getStatus(), request.getDownloadInfo().getError());
+                DLogger.e(org.aiwen.downloader.utils.Utils.getDownloaderTAG(request), "下载失败(%d, %s, %s)", request.getDownloadInfo().getStatus(), request.getDownloadInfo().getError(), request.key);
+
+                mActionButton.setText("失败");
+                mIntroduce.setText(mApp.getmEditRecommend() + "");
+
+                setButtonNormal();
             }
+            // 下载成功
+            else if (org.aiwen.downloader.Downloads.Status.isStatusSuccess(request.getDownloadInfo().getStatus())) {
+                mActionButton.setText("成功");
+                mIntroduce.setText(mApp.getmEditRecommend() + "");
+
+                setButtonNormal();
+            }
+            // 其他情况，任务失败
             else if (!org.aiwen.downloader.Downloads.Status.isStatusRunning(request.getDownloadInfo().getStatus())) {
                 if (request.getTrace() != null) {
                     DLogger.v(org.aiwen.downloader.utils.Utils.getDownloaderTAG(request), "下载结束，下载耗时 %d ms， 总耗时 %d ms，平均速度 %d kb/s", request.getTrace().getTime(), request.getTrace().getRealTime(), (int) request.getTrace().getAverageSpeed());
                 }
+
+                mActionButton.setText("失败");
+                mIntroduce.setText(mApp.getmEditRecommend() + "");
             }
     }
 

@@ -107,6 +107,8 @@ public class Hawk implements IDownloadSubject {
                 mRequestMap.put(copyRequest.key, copyRequest);
             }
 
+            copyRequest.downloadInfo.status = -1;
+
             DownloadService.request(mContext, copyRequest.key);
         }
     }

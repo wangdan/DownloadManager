@@ -54,8 +54,12 @@ public final class Request {
                 // download was waiting for a delayed restart
                 final long now = Utils.realtime();
                 boolean retry = downloadInfo.restartTime(now) <= now;
+                if (!retry) {
+                    DLogger.e(Utils.getDownloaderTAG(this), "retry = false, lastMod + retryAfter = %d, now = %d", downloadInfo.lastMod + downloadInfo.retryAfter, now);
+                }
+                retry = true;
 
-                DLogger.w(Utils.getDownloaderTAG(this), "第 %d 次尝试下载重连", downloadInfo.numFailed);
+                DLogger.w(Utils.getDownloaderTAG(this), "第 %d 次尝试下载重连, id = %d", downloadInfo.numFailed, id);
 
                 return retry;
             // 等待网络重连

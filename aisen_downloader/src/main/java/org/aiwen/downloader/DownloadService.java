@@ -50,6 +50,7 @@ public class DownloadService extends Service {
     private AlarmManager mAlarmManager;
     private ThreadPoolExecutor mExecutor;
     private AtomicBoolean mResourceDestoryed = new AtomicBoolean(false);
+    private AtomicInteger mRequestArrived = new AtomicInteger();
     private AtomicInteger mThreadCount = new AtomicInteger();
 
     @Override
@@ -100,7 +101,7 @@ public class DownloadService extends Service {
 
     // 取消重连闹钟
     void cancelRetryAlarm(Request request) {
-        DLogger.i(TAG, "取消重连闹钟, key = %s", request.key);
+        DLogger.i(TAG, "取消重连闹钟, key = %s, requestCode = %d", request.key, (int) request.id);
 
         final Intent intent = new Intent(Constants.ACTION_RETRY);
         intent.putExtra("key", request.key);
@@ -112,7 +113,7 @@ public class DownloadService extends Service {
     void setRetryAlarm(Request request) {
         long nextActionMillis = request.downloadInfo.retryAfter;
 
-        DLogger.i(TAG, "scheduling start in %d ms, key = %s", nextActionMillis, request.key);
+        DLogger.i(TAG, "scheduling start in %d ms, key = %s, id = %d", nextActionMillis, request.key, (int) request.id);
 
         final Intent intent = new Intent(Constants.ACTION_RETRY);
         intent.putExtra("key", request.key);
@@ -122,6 +123,8 @@ public class DownloadService extends Service {
     }
 
     void enqueueUpdate(String key, long delay) {
+        mRequestArrived.getAndIncrement();
+
         if (isResourceDestoryed()) {
             return;
         }
@@ -181,6 +184,8 @@ public class DownloadService extends Service {
     };
 
     private void handleUpdate(String key) {
+        mRequestArrived.getAndDecrement();
+
         boolean isActive = false;
 
         do {
@@ -219,7 +224,7 @@ public class DownloadService extends Service {
             stopIfNeed();
         }
 
-        DLogger.v(TAG, "isActive = " + isActive + ", key = " + key);
+        DLogger.v(TAG, "isThreadActive = " + isActive + ", key = " + key);
     }
 
     void threadIncrement() {
@@ -241,10 +246,13 @@ public class DownloadService extends Service {
         destoryResource();
     }
 
-    private boolean isActive() {
-        if (mThreadCount.get() > 0) {
-            DLogger.i(TAG, "存在未下载完任务");
+    // 存在未处理完的Request请求
+    private boolean isRequestActive() {
+        return mRequestArrived.get() > 0;
+    }
 
+    private boolean isThreadActive() {
+        if (mThreadCount.get() > 0) {
             return true;
         }
 
@@ -256,8 +264,11 @@ public class DownloadService extends Service {
             return;
         }
 
-        if (isActive()) {
-            DLogger.i(TAG, "服务有未完成任务，不需要停止");
+        if (isThreadActive()) {
+            DLogger.i(TAG, "服务有未完成Thread任务，不需要停止");
+        }
+        else if (isRequestActive()) {
+            DLogger.i(TAG, "服务有未完成Request请求，不需要停止");
         }
         else {
             mHandler.post(new Runnable() {

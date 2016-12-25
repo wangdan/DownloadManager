@@ -77,6 +77,7 @@ public class DownloadThread implements Runnable {
         mRequest = request;
         mRequest.thread = this;
         mRequest.downloadInfo.status = Downloads.Status.STATUS_PENDING;
+        mRequest.downloadInfo.writeToDatabase();
         mHawk.trace.peddingThread.incrementAndGet();
         mService = service;
         mService.threadIncrement();
