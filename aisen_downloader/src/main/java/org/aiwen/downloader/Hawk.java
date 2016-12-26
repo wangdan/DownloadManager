@@ -8,6 +8,7 @@ import android.support.annotation.NonNull;
 import org.aiwen.downloader.utils.Utils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,6 +55,8 @@ public class Hawk implements IDownloadSubject {
 
     volatile ConcurrentHashMap<String, Request> mRequestMap;// 正在进行的请求
 
+    private final List<String> mNoneMap;
+
     private Hawk(Context context, Configuration config) {
         if (context != context.getApplicationContext()) {
             context = context.getApplicationContext();
@@ -63,6 +66,7 @@ public class Hawk implements IDownloadSubject {
         mHandler = new Handler(Looper.getMainLooper());
         mConfig = config;
         mRequestMap = new ConcurrentHashMap<>();
+        mNoneMap = Collections.synchronizedList(new ArrayList<String>());
         db = new DownloadDB(context);
         trace = new HawkTrace();
         mRequestSubjects = new ConcurrentHashMap<>();
@@ -73,6 +77,31 @@ public class Hawk implements IDownloadSubject {
 
     Configuration getConfiguration() {
         return mConfig;
+    }
+
+    public Request query(Request request) {
+        if (mNoneMap.contains(request.key)) {
+            return null;
+        }
+
+        Request copyRequest = mRequestMap.get(request.key);
+        if (copyRequest == null) {
+            copyRequest = Request.copy(request);
+
+            if (db.exist(copyRequest)) {
+                mRequestMap.put(copyRequest.key, copyRequest);
+                mNoneMap.remove(copyRequest.key);
+
+                return copyRequest;
+            }
+        }
+        else {
+            return copyRequest;
+        }
+
+        mNoneMap.add(request.key);
+
+        return null;
     }
 
     /**
@@ -101,6 +130,8 @@ public class Hawk implements IDownloadSubject {
             // 放在内存中
             if (!mRequestMap.containsKey(copyRequest.key)) {
                 mRequestMap.put(copyRequest.key, copyRequest);
+
+                mNoneMap.remove(copyRequest.key);
             }
 
             copyRequest.downloadInfo.status = -1;

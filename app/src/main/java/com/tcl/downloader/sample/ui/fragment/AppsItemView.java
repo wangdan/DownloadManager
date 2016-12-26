@@ -80,14 +80,20 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
 
     @Override
     public void onBindData(View view, AppBean app, int i) {
-        synchronized (this) {
-            if (mApp != null) {
-                mProxy.detach(this);
-            }
-            mApp = app;
-            mProxy.attach(this);
+        if (mApp != null) {
+            Hawk.getInstance().detach(this);
+        }
+        mApp = app;
+        Hawk.getInstance().attach(this);
 
-            Hawk.getInstance().attach(this);
+        org.aiwen.downloader.Request copyRequest = Hawk.getInstance().query(getRequest());
+        if (copyRequest != null && copyRequest.getDownloadInfo().getStatus() != -1) {
+            onStatusChanged(copyRequest);
+        }
+        else {
+            mActionButton.setText("下载");
+            mActionButton.setProgress(0);
+            setButtonNormal();
         }
 
         mTitle.setText(app.getName());
@@ -111,10 +117,6 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
             BitmapLoader.getInstance().display(null, app.getIcon_url(), mIcon, config);
         }
         mSelfLeftMargin.setVisibility(View.GONE);
-
-        if (DownloadManager.getInstance() != null) {
-            DownloadManager.getInstance().query(downloadURI(), downloadFileURI());
-        }
     }
 
     @Override
@@ -291,6 +293,7 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
         org.aiwen.downloader.Request request = org.aiwen.downloader.Request.Builder.create(uri, fileUri)
                                                         .setTitle(mApp.getName())
                                                         .setDestination(mApp.getDescription())
+                                                        .setVisibility(org.aiwen.downloader.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                                                         .get();
 
         return request;
