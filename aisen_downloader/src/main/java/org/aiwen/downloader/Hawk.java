@@ -1,11 +1,14 @@
 package org.aiwen.downloader;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 
+import org.aiwen.downloader.utils.Utils;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -43,6 +46,8 @@ public class Hawk implements IDownloadSubject {
 
     private final ConcurrentMap<String, RequestSubject> mRequestSubjects;
 
+    final DownloadNotifier notifier;
+
     final DownloadDB db;
 
     final HawkTrace trace;
@@ -61,22 +66,13 @@ public class Hawk implements IDownloadSubject {
         db = new DownloadDB(context);
         trace = new HawkTrace();
         mRequestSubjects = new ConcurrentHashMap<>();
+        notifier = new DownloadNotifier(mContext);
 
         DLogger.w("Hawk new instance");
     }
 
     Configuration getConfiguration() {
         return mConfig;
-    }
-
-    public static Request create(Uri uri, Uri fileUri) {
-        String key = KeyGenerator.generateMD5(uri.toString());
-
-        if (mInstance != null && mInstance.mRequestMap.containsKey(key)) {
-            return mInstance.mRequestMap.get(key);
-        }
-
-        return new Request(uri, fileUri);
     }
 
     /**
@@ -163,6 +159,10 @@ public class Hawk implements IDownloadSubject {
             return;
         }
 
+        // 更新Notifier
+        updateNotifier(!Downloads.Status.isStatusRunning(request.downloadInfo.status));
+
+        // 更新观察者
         final RequestSubject requestSubject = mRequestSubjects.get(request.key);
         if (requestSubject != null) {
             // 在UI线程中更新状态
@@ -181,6 +181,21 @@ public class Hawk implements IDownloadSubject {
         Set<String> keySet = mRequestSubjects.keySet();
         for (String key : keySet) {
             notifyStatus(mRequestMap.get(key));
+        }
+    }
+
+    private long mLastNotifyTime;
+    void updateNotifier(boolean force) {
+        long now = Utils.now();
+        if (force || Math.abs(now - mLastNotifyTime) > 700) {
+            List<DownloadInfo> downloadInfos = new ArrayList<>();
+            Set<String> keySet = mRequestMap.keySet();
+            for (String k : keySet) {
+                downloadInfos.add(mRequestMap.get(k).downloadInfo);
+            }
+            notifier.updateWith(downloadInfos);
+
+            mLastNotifyTime = now;
         }
     }
 

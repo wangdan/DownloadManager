@@ -288,7 +288,10 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
 
         Uri uri = Uri.parse(mApp.getApk_url());
         Uri fileUri = Uri.fromFile(new File(getContext().getExternalFilesDir("apks") + File.separator + KeyGenerator.generateMD5(uri.toString()) + ".apk"));
-        org.aiwen.downloader.Request request = Hawk.create(uri, fileUri);
+        org.aiwen.downloader.Request request = org.aiwen.downloader.Request.Builder.create(uri, fileUri)
+                                                        .setTitle(mApp.getName())
+                                                        .setDestination(mApp.getDescription())
+                                                        .get();
 
         return request;
     }
@@ -304,7 +307,7 @@ public class AppsItemView extends ARecycleViewItemView<AppBean> implements View.
                 setButtonNormal();
             }
             // 正在下载
-            else if (request.getDownloadInfo().getStatus() == Downloads.Status.STATUS_RUNNING) {
+            else if (Downloads.Status.isStatusRunning(request.getDownloadInfo().getStatus())) {
                 DLogger.v(org.aiwen.downloader.utils.Utils.getDownloaderTAG(request), "下载速度(%d), 平均速度(%d)", (int) request.getTrace().getSpeed(), (int) request.getTrace().getAverageSpeed());
 
                 mActionButton.setText(Math.round(request.getDownloadInfo().getRangeBytes() * 100.0f / request.getDownloadInfo().getFileBytes()) + "%");

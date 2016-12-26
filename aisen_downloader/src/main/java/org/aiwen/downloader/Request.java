@@ -1,6 +1,7 @@
 package org.aiwen.downloader;
 
 
+import android.app.DownloadManager;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
@@ -15,6 +16,31 @@ import org.aiwen.downloader.utils.Utils;
  */
 public final class Request {
 
+    /**
+     * This download is visible but only shows in the notifications
+     * while it's in progress.
+     */
+    public static final int VISIBILITY_VISIBLE = 0;
+
+    /**
+     * This download is visible and shows in the notifications while
+     * in progress and after completion.
+     */
+    public static final int VISIBILITY_VISIBLE_NOTIFY_COMPLETED = 1;
+
+    /**
+     * This download doesn't show in the UI or in the notifications.
+     */
+    public static final int VISIBILITY_HIDDEN = 2;
+
+    /**
+     * This download shows in the notifications after completion ONLY.
+     * It is usuable only with
+     * {@link DownloadManager#addCompletedDownload(String, String,
+     * boolean, String, String, long, boolean)}.
+     */
+    public static final int VISIBILITY_VISIBLE_NOTIFY_ONLY_COMPLETION = 3;
+
     long id;// DB中的ID
 
     public final String key;// 每一个Request唯一Key
@@ -28,6 +54,42 @@ public final class Request {
     DownloadThread thread;
 
     final DownloadInfo downloadInfo;
+
+    public static class Builder {
+
+        final Request request;
+
+        private Builder(Request request) {
+            this.request = request;
+        }
+
+        public static Builder create(Uri uri, Uri fileUri) {
+            return new Builder(new Request(uri, fileUri));
+        }
+
+        public Builder setTitle(String title) {
+            request.downloadInfo.title = title;
+
+            return this;
+        }
+
+        public Builder setVisibility(int visibility) {
+            request.downloadInfo.visibility = visibility;
+
+            return this;
+        }
+
+        public Builder setDestination(String destination) {
+            request.downloadInfo.destination = destination;
+
+            return this;
+        }
+
+        public Request get() {
+            return request;
+        }
+
+    }
 
     Request(Uri uri, Uri fileUri) {
         this.uri = uri;
@@ -78,6 +140,10 @@ public final class Request {
     static Request copy(Request request) {
         Request copyRequest = new Request(request.uri, request.fileUri);
 
+        copyRequest.downloadInfo.title = request.downloadInfo.title;
+        copyRequest.downloadInfo.destination = request.downloadInfo.destination;
+        copyRequest.downloadInfo.visibility = request.downloadInfo.visibility;
+
         return copyRequest;
     }
 
@@ -100,6 +166,9 @@ public final class Request {
     void set(Cursor cursor) {
         try {
             id = cursor.getInt(cursor.getColumnIndexOrThrow(Downloads.Impl._ID));
+            downloadInfo.title = cursor.getString(cursor.getColumnIndexOrThrow(Downloads.Impl.COLUMN_TITLE));
+            downloadInfo.destination = cursor.getString(cursor.getColumnIndexOrThrow(Downloads.Impl.COLUMN_DESCRIPTION));
+            downloadInfo.visibility = cursor.getInt(cursor.getColumnIndexOrThrow(Downloads.Impl.COLUMN_VISIBILITY));
             downloadInfo.status = cursor.getInt(cursor.getColumnIndexOrThrow(Downloads.Impl.COLUMN_STATUS));
             downloadInfo.rangeBytes = cursor.getLong(cursor.getColumnIndexOrThrow(Downloads.Impl.COLUMN_CURRENT_BYTES));
             downloadInfo.fileBytes = cursor.getLong(cursor.getColumnIndexOrThrow(Downloads.Impl.COLUMN_TOTAL_BYTES));
@@ -114,6 +183,12 @@ public final class Request {
         ContentValues contentValues = new ContentValues();
 
         contentValues.put(Downloads.Impl.COLUMN_KEY, key);
+        // 标题
+        contentValues.put(Downloads.Impl.COLUMN_TITLE, downloadInfo.title);
+        // 副标题
+        contentValues.put(Downloads.Impl.COLUMN_DESCRIPTION, downloadInfo.destination);
+        // 标题栏可见
+        contentValues.put(Downloads.Impl.COLUMN_VISIBILITY, downloadInfo.visibility);
         // 状态
         contentValues.put(Downloads.Impl.COLUMN_STATUS, downloadInfo.status);
         // URI
@@ -146,6 +221,9 @@ public final class Request {
                 .append(", retryAfter = ").append(downloadInfo.retryAfter)
                 .append(", rangeBytes = ").append(downloadInfo.rangeBytes)
                 .append(", fileBytes = ").append(downloadInfo.fileBytes)
+                .append(", title = ").append(downloadInfo.title)
+                .append(", destination = ").append(downloadInfo.destination)
+                .append(", visibility = ").append(downloadInfo.visibility)
                 .append(", uri = ").append(uri.toString())
                 .toString();
     }

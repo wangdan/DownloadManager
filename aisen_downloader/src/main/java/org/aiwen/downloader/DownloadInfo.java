@@ -6,7 +6,13 @@ package org.aiwen.downloader;
 
 public class DownloadInfo {
 
-    private final Request mRequest;
+    final Request request;
+
+    String title;// 标题
+
+    String destination;// 副标题
+
+    int visibility = Request.VISIBILITY_VISIBLE;// 通知栏可见
 
     int status = -1;// 下载的状态
 
@@ -23,16 +29,16 @@ public class DownloadInfo {
     long retryAfter;// 等待这个时间后再重试
 
     public DownloadInfo(Request request) {
-        mRequest = request;
+        this.request = request;
     }
 
     void writeToDatabase() {
         Hawk hawk = Hawk.getInstance();
 
         if (hawk != null) {
-            hawk.notifyStatus(mRequest);
+            hawk.notifyStatus(request);
 
-            hawk.db.update(mRequest);
+            hawk.db.update(request);
         }
     }
 

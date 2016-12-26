@@ -58,6 +58,7 @@ class DownloadDB extends SQLiteOpenHelper {
                     Downloads.Impl.COLUMN_ALLOWED_NETWORK_TYPES + " INTEGER, " +
                     Downloads.Impl.COLUMN_BYPASS_RECOMMENDED_SIZE_LIMIT + " BOOLEAN, " +
                     Downloads.Impl.COLUMN_TITLE + " TEXT, " +
+                    Downloads.Impl.COLUMN_VISIBILITY + " INTEGER, " +
                     Downloads.Impl.COLUMN_DESCRIPTION + " TEXT " +
                     ");");
         } catch (SQLException ex) {

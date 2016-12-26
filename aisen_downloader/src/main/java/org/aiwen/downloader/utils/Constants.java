@@ -13,6 +13,15 @@ public class Constants {
     /** The intent that gets sent when the service must wake up for a retry */
     public static final String ACTION_RETRY = "android.intent.action.DOWNLOAD_WAKEUP";
 
+    /** the intent that gets sent when clicking an incomplete/failed download  */
+    public static final String ACTION_LIST = "android.intent.action.DOWNLOAD_LIST";
+
+    /** the intent that gets sent when clicking a successful download */
+    public static final String ACTION_OPEN = "android.intent.action.DOWNLOAD_OPEN";
+
+    /** the intent that gets sent when deleting the notification of a completed download */
+    public static final String ACTION_HIDE = "android.intent.action.DOWNLOAD_HIDE";
+
     /** The minimum amount of progress that has to be done before the progress bar gets updated */
     public static final int MIN_PROGRESS_STEP = 65536;
 

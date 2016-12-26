@@ -63,6 +63,7 @@ public class DownloadThread implements Runnable {
 
     private final Request mRequest;
     private final DownloadService mService;
+    private final DownloadNotifier mNotifier;
     private final Hawk mHawk;
     private File mTempFile;
 
@@ -74,6 +75,7 @@ public class DownloadThread implements Runnable {
 
     public DownloadThread(Hawk hawk, Request request, DownloadService service) {
         mHawk = hawk;
+        mNotifier = hawk.notifier;
         mRequest = request;
         mRequest.thread = this;
         mRequest.downloadInfo.status = Downloads.Status.STATUS_PENDING;
@@ -140,6 +142,8 @@ public class DownloadThread implements Runnable {
             mHawk.trace.concurrentThread.decrementAndGet();
 
             downloadInfo.lastMod = Utils.realtime();
+            mRequest.trace.speed = 0l;
+            mNotifier.notifyDownloadSpeed(mRequest.id, 0);
             downloadInfo.writeToDatabase();
         }
 
@@ -256,19 +260,21 @@ public class DownloadThread implements Runnable {
                 final long bytesDelta = currentBytes - mLastUpdateBytes;
                 final long timeDelta = now - mLastUpdateTime;
                 if (bytesDelta > Constants.MIN_PROGRESS_STEP && timeDelta > Constants.MIN_PROGRESS_TIME) {
+                    mLastUpdateBytes = currentBytes;
+                    mLastUpdateTime = now;
+
+                    trace.endSpeedCount();
+                    trace.computeSpeed();
+                    mNotifier.notifyDownloadSpeed(mRequest.id, (long) trace.getSpeed());
+
+                    trace.beginSpeedCount();
+
                     // 正常下载数据后，将下载失败次数清零
                     if (downloadInfo.numFailed > 0) {
                         downloadInfo.numFailed = 0;
                         downloadInfo.retryAfter = 0;
                     }
                     downloadInfo.writeToDatabase();
-
-                    mLastUpdateBytes = currentBytes;
-                    mLastUpdateTime = now;
-
-                    trace.endSpeedCount();
-                    trace.computeSpeed();
-                    trace.beginSpeedCount();
                 }
             }
             trace.endRead();

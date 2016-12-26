@@ -33,6 +33,15 @@ public final class Downloads {
         public static final String COLUMN_DESCRIPTION = "description";
 
         /**
+         * The name of the column containing the flags that controls whether the
+         * download is displayed by the UI. See the VISIBILITY_* constants for
+         * a list of legal values.
+         * <P>Type: INTEGER</P>
+         * <P>Owner can Init/Read/Write</P>
+         */
+        public static final String COLUMN_VISIBILITY = "visibility";
+
+        /**
          * The name of the column containing the URI of the data being downloaded.
          * <P>Type: TEXT</P>
          * <P>Owner can Init/Read</P>
@@ -197,6 +206,10 @@ public final class Downloads {
 
         public static boolean isStatusRunning(int status) {
             return status == STATUS_PENDING || status == STATUS_RUNNING;
+        }
+
+        public static boolean isStatusCompleted(int status) {
+            return (status >= 200 && status < 300) || (status >= 400 && status < 600);
         }
 
         public static String statusToString(int status) {

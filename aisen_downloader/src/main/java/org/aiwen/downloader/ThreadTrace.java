@@ -17,7 +17,7 @@ public class ThreadTrace {
 
     private long readE;
 
-    private float speed;// 下载速度
+    float speed;// 下载速度
 
     private float averageSpeed;// 平均下载速度
 

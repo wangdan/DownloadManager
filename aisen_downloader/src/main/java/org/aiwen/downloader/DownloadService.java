@@ -15,7 +15,9 @@ import android.text.TextUtils;
 import org.aiwen.downloader.utils.Constants;
 import org.aiwen.downloader.utils.Utils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -90,6 +92,10 @@ public class DownloadService extends Service {
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper(), mCallback);
         mAlarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Hawk hawk = Hawk.getInstance();
+        if (hawk != null) {
+            hawk.notifier.cancelAll();
+        }
     }
 
     @Override
@@ -228,6 +234,13 @@ public class DownloadService extends Service {
                     mExecutor.execute(new DownloadThread(hawk, request, DownloadService.this));
                 }
             }
+
+            List<DownloadInfo> downloadInfos = new ArrayList<>();
+            Set<String> keySet = hawk.mRequestMap.keySet();
+            for (String k : keySet) {
+                downloadInfos.add(hawk.mRequestMap.get(k).downloadInfo);
+            }
+            hawk.notifier.updateWith(downloadInfos);
         } while (false);
 
         if (!isActive) {
