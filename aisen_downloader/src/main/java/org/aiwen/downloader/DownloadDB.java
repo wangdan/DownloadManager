@@ -9,6 +9,9 @@ import android.util.Log;
 
 import org.aiwen.downloader.utils.Constants;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by 王dan on 2016/12/17.
  */
@@ -125,6 +128,38 @@ class DownloadDB extends SQLiteOpenHelper {
         request.id = rowId;
 
         DLogger.v(TAG, "rowId = %s, insert(%s)", Long.toString(rowId), request.toString());
+    }
+
+    public List<String> queryWaitingForNetwork() {
+        List<String> list = new ArrayList<>();
+
+        String[] columns = new String[]{ Downloads.Impl._ID, Downloads.Impl.COLUMN_KEY, Downloads.Impl.COLUMN_STATUS };
+        String selection = String.format(" %s = ? or %s = ? or %s = ? ", Downloads.Impl.COLUMN_STATUS, Downloads.Impl.COLUMN_STATUS, Downloads.Impl.COLUMN_STATUS);
+        String[] selectionArgs = new String[]{ Downloads.Status.STATUS_WAITING_TO_RETRY + "",
+                                                Downloads.Status.STATUS_WAITING_FOR_NETWORK + "",
+                                                Downloads.Status.STATUS_QUEUED_FOR_WIFI + "" };
+
+        Cursor cursor = getWritableDatabase().query(DB_TABLE, columns, selection, selectionArgs, null, null, " _id ");
+        try {
+            if (cursor.moveToFirst()) {
+                do {
+                    long id = cursor.getLong(cursor.getColumnIndexOrThrow(Downloads.Impl._ID));
+                    String key = cursor.getString(cursor.getColumnIndexOrThrow(Downloads.Impl.COLUMN_KEY));
+                    String status = Downloads.Status.statusToString(cursor.getInt(cursor.getColumnIndexOrThrow(Downloads.Impl.COLUMN_STATUS)));
+
+                    DLogger.v(TAG, "id = %d, key = %s, status = %s", id, key, status);
+                    list.add(key);
+                } while (cursor.moveToNext());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        return list;
     }
 
 }

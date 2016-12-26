@@ -15,6 +15,7 @@ import android.text.TextUtils;
 import org.aiwen.downloader.utils.Constants;
 import org.aiwen.downloader.utils.Utils;
 
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -33,6 +34,15 @@ public class DownloadService extends Service {
 
     public static final String ACTION_REQUEST = "org.aisen.downloader.ACTION_REQUEST";
 
+    public static final String ACTION_RETRY_BY_WIFI = "org.aisen.downloader.ACTION_RETRY_BY_WIFI";
+
+    public static void retryByWIFI(Context context) {
+        Intent service = new Intent(context, DownloadService.class);
+        service.setAction(ACTION_RETRY_BY_WIFI);
+
+        context.startService(service);
+    }
+
     public static void request(Context context, String key) {
         Intent service = new Intent(context, DownloadService.class);
         service.putExtra("key", key);
@@ -42,6 +52,7 @@ public class DownloadService extends Service {
     }
 
     final int MSG_UPDATE = 1000;
+    final int MSG_WIFI_UPDATE = 1001;
 
     private HandlerThread mHandlerThread;
     private Handler mHandler;
@@ -89,9 +100,11 @@ public class DownloadService extends Service {
             }
 
             if (ACTION_REQUEST.equals(intent.getAction())) {
-                enqueueUpdate(intent.getStringExtra("key"), 0);
+                enqueueUpdate(intent.getStringExtra("key"));
             }
-
+            else if (ACTION_RETRY_BY_WIFI.equals(intent.getAction())) {
+                enqueueRetryByWifi();
+            }
         } while (false);
 
         return super.onStartCommand(intent, flags, startId);
@@ -120,21 +133,24 @@ public class DownloadService extends Service {
                 PendingIntent.getBroadcast(this, (int) request.id, intent, PendingIntent.FLAG_ONE_SHOT));
     }
 
-    void enqueueUpdate(String key, long delay) {
-        mRequestArrived.getAndIncrement();
-
+    void enqueueRetryByWifi() {
         if (isResourceDestoryed()) {
             return;
         }
 
-        if (mHandler != null) {
-            if (delay > 0) {
-                mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_UPDATE, key), delay);
-            }
-            else {
-                mHandler.obtainMessage(MSG_UPDATE, key).sendToTarget();
-            }
+        mRequestArrived.getAndIncrement();
+
+        mHandler.obtainMessage(MSG_WIFI_UPDATE).sendToTarget();
+    }
+
+    void enqueueUpdate(String key) {
+        if (isResourceDestoryed()) {
+            return;
         }
+
+        mRequestArrived.getAndIncrement();
+
+        mHandler.obtainMessage(MSG_UPDATE, key).sendToTarget();
     }
 
     @Nullable
@@ -153,12 +169,29 @@ public class DownloadService extends Service {
                 case MSG_UPDATE:
                     handleUpdate(message.obj.toString());
                     break;
+                case MSG_WIFI_UPDATE:
+                    handleWifiUpdate();
+                    break;
             }
 
             return true;
         }
 
     };
+
+    private void handleWifiUpdate() {
+        mRequestArrived.getAndDecrement();
+
+        Hawk hawk = Hawk.getInstance();
+        if (hawk != null) {
+            List<String> keyList = hawk.db.queryWaitingForNetwork();
+            for (String key : keyList) {
+                handleUpdate(key);
+            }
+        }
+
+        stopIfNeed();
+    }
 
     private void handleUpdate(String key) {
         mRequestArrived.getAndDecrement();
