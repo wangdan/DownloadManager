@@ -66,6 +66,7 @@ public class DownloadThread implements Runnable {
     private final DownloadNotifier mNotifier;
     private final Hawk mHawk;
     private File mTempFile;
+    private File mSaveFile;
 
     /**
      * Details from the last time we pushed a database update.
@@ -93,10 +94,22 @@ public class DownloadThread implements Runnable {
         final DownloadInfo downloadInfo = mRequest.downloadInfo;
 
         try {
-            // 创建临时文件
-            mTempFile = FileManager.createTempFile(mRequest);
-
             mRequest.trace = new ThreadTrace(mRequest);
+
+            // 创建临时文件
+            mTempFile = FileManager.createFile(mRequest, true);
+            mSaveFile = FileManager.createFile(mRequest, false);;
+
+            // 验证文件
+            if (checkFile()) {
+                DLogger.w(Utils.getDownloaderTAG(mRequest), "文件校验成功，完成下载");
+
+                downloadInfo.status = Downloads.Status.STATUS_SUCCESS;
+                downloadInfo.rangeBytes = downloadInfo.fileBytes;
+                downloadInfo.numFailed = 0;
+
+                return;
+            }
 
             downloadInfo.status = Downloads.Status.STATUS_RUNNING;
             downloadInfo.writeToDatabase();
@@ -195,9 +208,12 @@ public class DownloadThread implements Runnable {
             throw new DownloadException(Downloads.Status.STATUS_HTTP_EXCEPTION);
         }
 
-        // 开始解析数据
         try {
+            // 开始解析数据
             transferData(request, response);
+
+            // 临时文件copy成目标文件
+            copyFile();
         } catch (IOException e) {
             Utils.printStackTrace(e);
 
@@ -284,6 +300,66 @@ public class DownloadThread implements Runnable {
             Utils.close(in);
             Utils.close(out);
         }
+    }
+
+    // 重新获取文件的长度，目前仅支持使用文件长度校验文件合法性
+    private boolean checkFile() {
+        // 目标文件存在
+        if (mSaveFile.exists()) {
+            if (mSaveFile.length() == mRequest.downloadInfo.fileBytes) {
+                DLogger.w(Utils.getDownloaderTAG(mRequest), "目标文件已存在");
+
+                return mHawk.fileCheckCallback.onFileCheck(mRequest, mSaveFile);
+            }
+            else {
+                DLogger.w(Utils.getDownloaderTAG(mRequest), "删除目标文件，FileBytes(%d), File(%s)", mRequest.downloadInfo.fileBytes, mSaveFile.getAbsolutePath());
+
+                mSaveFile.delete();
+            }
+        }
+
+        // 临时文件存在
+        if (mTempFile.exists()) {
+            if (mTempFile.length() > 0) {
+                try {
+                    // 已下载完
+                    if (mTempFile.length() == mRequest.downloadInfo.fileBytes) {
+                        if (copyFile()) {
+                            DLogger.w(Utils.getDownloaderTAG(mRequest), "临时文件存在且copy为目标文件");
+
+                            return mHawk.fileCheckCallback.onFileCheck(mRequest, mSaveFile);
+                        }
+                    }
+                    // 断点下载
+                    else if (mTempFile.length() == mRequest.downloadInfo.rangeBytes) {
+                        return true;
+                    }
+                } catch (DownloadException e){
+                    e.printStackTrace();
+                }
+            }
+
+            DLogger.w(Utils.getDownloaderTAG(mRequest), "删除临时文件(%s)", mTempFile.getAbsolutePath());
+            mTempFile.delete();
+            mRequest.downloadInfo.rangeBytes = 0;
+        }
+        else {
+            mRequest.downloadInfo.rangeBytes = 0;
+        }
+
+        return false;
+    }
+
+    private boolean copyFile() throws DownloadException {
+        try {
+            return mTempFile.renameTo(mSaveFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        DLogger.w(Utils.getDownloaderTAG(mRequest), "重命名临时文件出错, save file = %s", mSaveFile.getAbsolutePath());
+
+        throw new DownloadException(Downloads.Status.STATUS_FILE_ERROR);
     }
 
     @Override

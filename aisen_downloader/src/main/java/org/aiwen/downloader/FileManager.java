@@ -17,9 +17,10 @@ class FileManager {
      * @param request
      * @return
      */
-    static File createTempFile(Request request) throws DownloadException {
+    static File createFile(Request request, boolean temp) throws DownloadException {
         try {
-            File tempFile = new File(request.fileUri.getPath() + Constants.TEMP_SUFFIX);
+            String suffix = temp ? Constants.TEMP_SUFFIX : "";
+            File tempFile = new File(request.fileUri.getPath() + suffix);
             long rangeBytes = request.downloadInfo.rangeBytes;
 
             if (tempFile.exists()) {

@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
 
 import org.aiwen.downloader.utils.Utils;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +48,8 @@ public class Hawk implements IDownloadSubject {
 
     private final ConcurrentMap<String, RequestSubject> mRequestSubjects;
 
+    IFileCheckCallback fileCheckCallback;
+
     final DownloadNotifier notifier;
 
     final DownloadDB db;
@@ -71,6 +74,7 @@ public class Hawk implements IDownloadSubject {
         trace = new HawkTrace();
         mRequestSubjects = new ConcurrentHashMap<>();
         notifier = new DownloadNotifier(mContext);
+        fileCheckCallback = new DefFileCheckCallback();
 
         DLogger.w("Hawk new instance");
     }
@@ -215,6 +219,10 @@ public class Hawk implements IDownloadSubject {
         }
     }
 
+    public void setFileCheckCallback(IFileCheckCallback fileCheckCallback) {
+        this.fileCheckCallback = fileCheckCallback;
+    }
+
     private long mLastNotifyTime;
     void updateNotifier(boolean force) {
         long now = Utils.now();
@@ -228,6 +236,31 @@ public class Hawk implements IDownloadSubject {
 
             mLastNotifyTime = now;
         }
+    }
+
+    /**
+     * 当下载文件已存在时，回调验证文件的合法性，如果返回false:删除本地文件
+     *
+     */
+    public interface IFileCheckCallback {
+
+        /**
+         * 验证文件是否合法
+         *
+         * @param file
+         * @return true:文件合法
+         */
+        boolean onFileCheck(Request request, File file);
+
+    }
+
+    private static class DefFileCheckCallback implements IFileCheckCallback {
+
+        @Override
+        public boolean onFileCheck(Request request, File file) {
+            return true;
+        }
+
     }
 
 }
