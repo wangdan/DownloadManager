@@ -58,11 +58,9 @@ class DownloadNotifier {
      */
     private final LongSparseLongArray mDownloadTouch = new LongSparseLongArray();
 
-    private final Context mContext;
     private final NotificationManager mNotifManager;
 
     public DownloadNotifier(Context context) {
-        mContext = context;
         mNotifManager = (NotificationManager) context.getSystemService(
                 Context.NOTIFICATION_SERVICE);
     }
@@ -100,7 +98,13 @@ class DownloadNotifier {
     }
 
     private void updateWithLocked(Collection<DownloadInfo> downloads) {
-        final Resources res = mContext.getResources();
+        Hawk hawk = Hawk.getInstance();
+        if (hawk == null) {
+            return;
+        }
+        Context context = hawk.getContext();
+
+        final Resources res = context.getResources();
 
         // Cluster downloads together
         final Multimap<String, DownloadInfo> clustered = ArrayListMultimap.create();
@@ -118,7 +122,7 @@ class DownloadNotifier {
             final int type = getNotificationTagType(tag);
             final Collection<DownloadInfo> cluster = clustered.get(tag);
 
-            final NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext);
+            final NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
             builder.setColor(res.getColor(
                     R.color.system_notification_accent_color));
 
@@ -146,10 +150,10 @@ class DownloadNotifier {
                 // build a synthetic uri for intent identification purposes
                 final Uri uri = new Uri.Builder().scheme("active-dl").appendPath(tag).build();
                 final Intent intent = new Intent(Constants.ACTION_LIST,
-                        uri, mContext, DownloadReceiver.class);
+                        uri, context, DownloadReceiver.class);
                 intent.putExtra(DownloadManager.EXTRA_NOTIFICATION_CLICK_DOWNLOAD_IDS,
                         getDownloadIds(cluster));
-                builder.setContentIntent(PendingIntent.getBroadcast(mContext,
+                builder.setContentIntent(PendingIntent.getBroadcast(context,
                         0, intent, PendingIntent.FLAG_UPDATE_CURRENT));
                 builder.setOngoing(true);
 
@@ -170,15 +174,15 @@ class DownloadNotifier {
 //                    }
                 }
 
-                final Intent intent = new Intent(action, uri, mContext, DownloadReceiver.class);
+                final Intent intent = new Intent(action, uri, context, DownloadReceiver.class);
                 intent.putExtra(DownloadManager.EXTRA_NOTIFICATION_CLICK_DOWNLOAD_IDS,
                         getDownloadIds(cluster));
-                builder.setContentIntent(PendingIntent.getBroadcast(mContext,
+                builder.setContentIntent(PendingIntent.getBroadcast(context,
                         0, intent, PendingIntent.FLAG_UPDATE_CURRENT));
 
                 final Intent hideIntent = new Intent(Constants.ACTION_HIDE,
-                        uri, mContext, DownloadReceiver.class);
-                builder.setDeleteIntent(PendingIntent.getBroadcast(mContext, (int) info.request.id, hideIntent, 0));
+                        uri, context, DownloadReceiver.class);
+                builder.setDeleteIntent(PendingIntent.getBroadcast(context, (int) info.request.id, hideIntent, 0));
             }
 
             // Calculate and show progress
@@ -204,7 +208,7 @@ class DownloadNotifier {
 
                     if (speed > 0) {
                         final long remainingMillis = ((total - current) * 1000) / (speed * 1000);
-                        remainingText = res.getString(R.string.download_remaining, formatDuration(remainingMillis, mContext.getResources()));
+                        remainingText = res.getString(R.string.download_remaining, formatDuration(remainingMillis, context.getResources()));
                     }
 
                     final int percent = (int) ((current * 100) / total);
@@ -304,9 +308,9 @@ class DownloadNotifier {
 
     private String buildNotificationTag(DownloadInfo info) {
         if (info.status == Downloads.Status.STATUS_QUEUED_FOR_WIFI) {
-            return TYPE_WAITING + ":" + mContext.getPackageName();
+            return TYPE_WAITING + ":" + "org.aiwen.downloader";
         } else if (isActiveAndVisible(info)) {
-            return TYPE_ACTIVE + ":" + mContext.getPackageName();
+            return TYPE_ACTIVE + ":" + "org.aiwen.downloader";
         } else if (isCompleteAndVisible(info)) {
             // Complete downloads always have unique notifs
             return TYPE_COMPLETE + ":" + info.request.id;

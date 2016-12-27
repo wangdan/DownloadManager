@@ -5,7 +5,6 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.SystemClock;
 
-import org.aiwen.downloader.DLogger;
 import org.aiwen.downloader.Hawk;
 import org.aiwen.downloader.Request;
 
@@ -36,11 +35,6 @@ public class Utils {
 
     public static long realtime() {
         return SystemClock.elapsedRealtime();
-    }
-
-    public static void printStackTrace(Exception e) {
-        DLogger.e(Constants.TAG, e + "");
-        DLogger.printExc(Utils.class, e);
     }
 
     public static boolean isNetworkActive() {

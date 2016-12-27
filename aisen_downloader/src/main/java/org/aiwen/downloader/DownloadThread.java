@@ -202,7 +202,7 @@ public class DownloadThread implements Runnable {
 
             trace.endConnect();
         } catch (IOException e) {
-            Utils.printStackTrace(e);
+            DLogger.printStackTrace(e);
 
             trace.endConnect();
             trace.endRead();
@@ -217,7 +217,7 @@ public class DownloadThread implements Runnable {
             // 临时文件copy成目标文件
             copyFile();
         } catch (IOException e) {
-            Utils.printStackTrace(e);
+            DLogger.printStackTrace(e);
 
             trace.endSpeedCount();
             trace.computeSpeed();
@@ -254,7 +254,7 @@ public class DownloadThread implements Runnable {
         try {
             out = new FileOutputStream(mTempFile, true);
         } catch (FileNotFoundException e) {
-            Utils.printStackTrace(e);
+            DLogger.printStackTrace(e);
 
             throw new DownloadException(Downloads.Status.STATUS_FILE_ERROR);
         }
@@ -311,7 +311,7 @@ public class DownloadThread implements Runnable {
             if (mSaveFile.length() == mRequest.downloadInfo.fileBytes) {
                 DLogger.w(Utils.getDownloaderTAG(mRequest), "目标文件已存在");
 
-                return mHawk.fileCheckCallback.onFileCheck(mRequest, mSaveFile);
+                return mHawk.getConfiguration().fileCheckCallback.onFileCheck(mRequest, mSaveFile);
             }
             else {
                 DLogger.w(Utils.getDownloaderTAG(mRequest), "删除目标文件，FileBytes(%d), File(%s)", mRequest.downloadInfo.fileBytes, mSaveFile.getAbsolutePath());
@@ -329,7 +329,7 @@ public class DownloadThread implements Runnable {
                         if (copyFile()) {
                             DLogger.w(Utils.getDownloaderTAG(mRequest), "临时文件存在且copy为目标文件");
 
-                            return mHawk.fileCheckCallback.onFileCheck(mRequest, mSaveFile);
+                            return mHawk.getConfiguration().fileCheckCallback.onFileCheck(mRequest, mSaveFile);
                         }
                     }
                     // 断点下载

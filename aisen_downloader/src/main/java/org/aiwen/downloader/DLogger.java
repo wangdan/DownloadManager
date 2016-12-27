@@ -1,9 +1,9 @@
 package org.aiwen.downloader;
 
-import android.content.Context;
 import android.util.Log;
 
 import org.aiwen.downloader.utils.Constants;
+import org.aiwen.downloader.utils.Utils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -15,9 +15,9 @@ import java.net.UnknownHostException;
 
 public class DLogger {
 
-    public final static String TAG = Constants.TAG + "_DLogger";
+    final static String TAG = Constants.TAG + "_DLogger";
 
-    static boolean DEBUG = true;
+    public static boolean DEBUG = true;
 
     public static void v(Object o) {
         if (DEBUG) {
@@ -28,7 +28,7 @@ public class DLogger {
 
     }
 
-    public static void v(String tag, Object o) {
+    static void v(String tag, Object o) {
         if (DEBUG) {
             String log = toJson(o);
 
@@ -36,7 +36,7 @@ public class DLogger {
         }
     }
 
-    public static void v(String tag, String msg, Throwable tr) {
+    static void v(String tag, String msg, Throwable tr) {
         if (DEBUG) {
             String log = msg + '\n' + getStackTraceString(tr);
 
@@ -52,7 +52,7 @@ public class DLogger {
         }
     }
 
-    public static void d(Object o) {
+    static void d(Object o) {
         if (DEBUG) {
             String log = toJson(o);
 
@@ -60,7 +60,7 @@ public class DLogger {
         }
     }
 
-    public static void d(String tag, Object o) {
+    static void d(String tag, Object o) {
         if (DEBUG) {
             String log = toJson(o);
 
@@ -68,7 +68,7 @@ public class DLogger {
         }
     }
 
-    public static void d(String tag, String msg, Throwable tr) {
+    static void d(String tag, String msg, Throwable tr) {
         if (DEBUG) {
             String log = msg + '\n' + getStackTraceString(tr);
 
@@ -76,7 +76,7 @@ public class DLogger {
         }
     }
 
-    public static void d(String tag, String format, Object... args) {
+    static void d(String tag, String format, Object... args) {
         if (DEBUG) {
             String log = String.format(format, args);
 
@@ -84,7 +84,7 @@ public class DLogger {
         }
     }
 
-    public static void i(Object o) {
+    static void i(Object o) {
         if (DEBUG) {
             String log = toJson(o);
 
@@ -92,7 +92,7 @@ public class DLogger {
         }
     }
 
-    public static void i(String tag, Object o) {
+    static void i(String tag, Object o) {
         if (DEBUG) {
             String log = toJson(o);
 
@@ -100,7 +100,7 @@ public class DLogger {
         }
     }
 
-    public static void i(String tag, String msg, Throwable tr) {
+    static void i(String tag, String msg, Throwable tr) {
         if (DEBUG) {
             String log = msg + '\n' + getStackTraceString(tr);
 
@@ -108,7 +108,7 @@ public class DLogger {
         }
     }
 
-    public static void i(String tag, String format, Object... args) {
+    static void i(String tag, String format, Object... args) {
         if (DEBUG) {
             String log = String.format(format, args);
 
@@ -116,7 +116,7 @@ public class DLogger {
         }
     }
 
-    public static void w(Object o) {
+    static void w(Object o) {
         if (DEBUG) {
             String log = toJson(o);
 
@@ -124,7 +124,7 @@ public class DLogger {
         }
     }
 
-    public static void w(String tag, Object o) {
+    static void w(String tag, Object o) {
         if (DEBUG) {
             String log = toJson(o);
 
@@ -132,7 +132,7 @@ public class DLogger {
         }
     }
 
-    public static void w(String tag, String msg, Throwable tr) {
+    static void w(String tag, String msg, Throwable tr) {
         if (DEBUG) {
             String log = msg + '\n' + getStackTraceString(tr);
 
@@ -140,7 +140,7 @@ public class DLogger {
         }
     }
 
-    public static void w(String tag, String format, Object... args) {
+    static void w(String tag, String format, Object... args) {
         if (DEBUG) {
             String log = String.format(format, args);
 
@@ -148,7 +148,7 @@ public class DLogger {
         }
     }
 
-    public static void e(Object o) {
+    static void e(Object o) {
         if (DEBUG) {
             String log = toJson(o);
 
@@ -156,7 +156,7 @@ public class DLogger {
         }
     }
 
-    public static void e(String tag, Object o) {
+    static void e(String tag, Object o) {
         if (DEBUG) {
             String log = toJson(o);
 
@@ -164,7 +164,7 @@ public class DLogger {
         }
     }
 
-    public static void e(String tag, String msg, Throwable tr) {
+    static void e(String tag, String msg, Throwable tr) {
         if (DEBUG) {
             String log = msg + '\n' + getStackTraceString(tr);
 
@@ -172,7 +172,7 @@ public class DLogger {
         }
     }
 
-    public static void e(String tag, String format, Object... args) {
+    static void e(String tag, String format, Object... args) {
         if (DEBUG) {
             String log = String.format(format, args);
 
@@ -181,14 +181,14 @@ public class DLogger {
     }
 
     // 这个日志会打印，不会因为release版本屏蔽
-    public static void sysout(String msg) {
+    static void sysout(String msg) {
         try {
             Log.v(TAG, msg);
         } catch (Throwable e) {
         }
     }
 
-    public static void printExc(Class<?> clazz, Throwable e) {
+    static void printExc(Class<?> clazz, Throwable e) {
         try {
             if (DEBUG) {
                 e.printStackTrace();
@@ -201,6 +201,12 @@ public class DLogger {
         } catch (Throwable ee) {
             ee.printStackTrace();
         }
+    }
+
+    static void printStackTrace(Exception e) {
+        e(Constants.TAG, e + "");
+
+        printExc(Utils.class, e);
     }
 
     static String getStackTraceString(Throwable tr) {
@@ -225,7 +231,7 @@ public class DLogger {
         return sw.toString();
     }
 
-    public static String toJson(Object msg) {
+    static String toJson(Object msg) {
         if (msg instanceof String)
             return msg.toString();
         if (msg instanceof Throwable) {

@@ -7,7 +7,6 @@ import android.support.annotation.NonNull;
 
 import org.aiwen.downloader.utils.Utils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,9 +27,18 @@ public class Hawk implements IDownloadSubject {
      * @param context
      */
     public static void setupWithConfig(Context context, Configuration config) {
+        if (context != context.getApplicationContext()) {
+            context = context.getApplicationContext();
+        }
+
         if (mInstance == null) {
             synchronized (Hawk.class) {
                 mInstance = new Hawk(context, config);
+            }
+        }
+        else {
+            synchronized (mInstance) {
+                mInstance.mContext = context;
             }
         }
     }
@@ -42,13 +50,11 @@ public class Hawk implements IDownloadSubject {
 
     private final Handler mHandler;
 
-    private final Configuration mConfig;
+    private final Configuration mConfiguration;
 
-    private final Context mContext;
+    private Context mContext;
 
     private final ConcurrentMap<String, RequestSubject> mRequestSubjects;
-
-    IFileCheckCallback fileCheckCallback;
 
     final DownloadNotifier notifier;
 
@@ -60,27 +66,22 @@ public class Hawk implements IDownloadSubject {
 
     private final List<String> mNoneMap;
 
-    private Hawk(Context context, Configuration config) {
-        if (context != context.getApplicationContext()) {
-            context = context.getApplicationContext();
-        }
-
-        mContext = context;
+    private Hawk(Context context, Configuration configuration) {
+        mContext = context.getApplicationContext();
         mHandler = new Handler(Looper.getMainLooper());
-        mConfig = config;
+        mConfiguration = configuration;
         mRequestMap = new ConcurrentHashMap<>();
         mNoneMap = Collections.synchronizedList(new ArrayList<String>());
         db = new DownloadDB(context);
         trace = new HawkTrace();
         mRequestSubjects = new ConcurrentHashMap<>();
-        notifier = new DownloadNotifier(mContext);
-        fileCheckCallback = new DefFileCheckCallback();
+        notifier = new DownloadNotifier(context);
 
         DLogger.w("Hawk new instance");
     }
 
     Configuration getConfiguration() {
-        return mConfig;
+        return mConfiguration;
     }
 
     public Request query(Request request) {
@@ -206,6 +207,10 @@ public class Hawk implements IDownloadSubject {
                 @Override
                 public void run() {
                     requestSubject.notifyStatus(request);
+
+                    if (mConfiguration.statusCallback != null) {
+                        mConfiguration.statusCallback.onStatusChanged(request);
+                    }
                 }
 
             });
@@ -217,10 +222,6 @@ public class Hawk implements IDownloadSubject {
         for (String key : keySet) {
             notifyStatus(mRequestMap.get(key));
         }
-    }
-
-    public void setFileCheckCallback(IFileCheckCallback fileCheckCallback) {
-        this.fileCheckCallback = fileCheckCallback;
     }
 
     private long mLastNotifyTime;
@@ -236,31 +237,6 @@ public class Hawk implements IDownloadSubject {
 
             mLastNotifyTime = now;
         }
-    }
-
-    /**
-     * 当下载文件已存在时，回调验证文件的合法性，如果返回false:删除本地文件
-     *
-     */
-    public interface IFileCheckCallback {
-
-        /**
-         * 验证文件是否合法
-         *
-         * @param file
-         * @return true:文件合法
-         */
-        boolean onFileCheck(Request request, File file);
-
-    }
-
-    private static class DefFileCheckCallback implements IFileCheckCallback {
-
-        @Override
-        public boolean onFileCheck(Request request, File file) {
-            return true;
-        }
-
     }
 
 }
