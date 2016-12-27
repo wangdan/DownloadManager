@@ -1,5 +1,6 @@
 package org.aiwen.downloader;
 
+import android.net.Uri;
 import android.provider.BaseColumns;
 
 /**
@@ -11,6 +12,12 @@ public final class Downloads {
     public static final class Impl implements BaseColumns {
 
         private Impl() {}
+
+        /**
+         * The content URI for accessing all downloads across all UIDs (requires the
+         * ACCESS_ALL_DOWNLOADS permission).
+         */
+        public static Uri ALL_DOWNLOADS_CONTENT_URI = Uri.parse("content://org.aiwen.downloader/all_downloads");
 
         public static final String COLUMN_KEY = "key";
 

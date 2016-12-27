@@ -4,6 +4,7 @@ import android.app.DownloadManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -154,9 +155,8 @@ class DownloadNotifier {
 
             } else if (type == TYPE_COMPLETE) {
                 final DownloadInfo info = cluster.iterator().next();
-                final Uri uri = null;
-//                final Uri uri = ContentUris.withAppendedId(
-//                        Downloads.Impl.ALL_DOWNLOADS_CONTENT_URI, info.request.id);
+                final Uri uri = ContentUris.withAppendedId(
+                        Downloads.Impl.ALL_DOWNLOADS_CONTENT_URI, info.request.id);
                 builder.setAutoCancel(true);
 
                 final String action;
@@ -178,7 +178,7 @@ class DownloadNotifier {
 
                 final Intent hideIntent = new Intent(Constants.ACTION_HIDE,
                         uri, mContext, DownloadReceiver.class);
-                builder.setDeleteIntent(PendingIntent.getBroadcast(mContext, 0, hideIntent, 0));
+                builder.setDeleteIntent(PendingIntent.getBroadcast(mContext, (int) info.request.id, hideIntent, 0));
             }
 
             // Calculate and show progress

@@ -156,6 +156,8 @@ public final class Request {
             request.set(cursor);
 
             DLogger.v(Constants.TAG, "SetRequest(%s)", request.toString());
+
+            return request;
         } catch (Exception e) {
             e.printStackTrace();
         }

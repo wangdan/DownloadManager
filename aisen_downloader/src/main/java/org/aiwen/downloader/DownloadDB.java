@@ -68,6 +68,27 @@ class DownloadDB extends SQLiteOpenHelper {
         }
     }
 
+    public Request query(long id) {
+        String[] columns = null;
+        String selection = String.format(" %s = ? ", Downloads.Impl._ID);
+        String[] selectionArgs = new String[]{ id + "" };
+        Cursor cursor = getWritableDatabase().query(DB_TABLE, columns, selection, selectionArgs, null, null, null);
+
+        try {
+            if (cursor.moveToFirst()) {
+                return Request.create(cursor);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        return null;
+    }
+
     public Request query(String key) {
         String[] columns = null;
         String selection = String.format(" %s = ? ", Downloads.Impl.COLUMN_KEY);
