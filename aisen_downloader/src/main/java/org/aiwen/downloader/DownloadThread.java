@@ -94,31 +94,33 @@ public class DownloadThread implements Runnable {
         final DownloadInfo downloadInfo = mRequest.downloadInfo;
 
         try {
-            mRequest.trace = new ThreadTrace(mRequest);
+            do {
+                mRequest.trace = new ThreadTrace(mRequest);
 
-            // 创建临时文件
-            mTempFile = FileManager.createFile(mRequest, true);
-            mSaveFile = FileManager.createFile(mRequest, false);;
+                // 创建临时文件
+                mTempFile = FileManager.createFile(mRequest, true);
+                mSaveFile = FileManager.createFile(mRequest, false);;
 
-            // 验证文件
-            if (checkFile()) {
-                DLogger.w(Utils.getDownloaderTAG(mRequest), "文件校验成功，完成下载");
+                // 验证文件
+                if (checkFile()) {
+                    DLogger.w(Utils.getDownloaderTAG(mRequest), "文件校验成功，完成下载");
+
+                    downloadInfo.status = Downloads.Status.STATUS_SUCCESS;
+                    downloadInfo.rangeBytes = downloadInfo.fileBytes;
+                    downloadInfo.numFailed = 0;
+
+                    break;
+                }
+
+                downloadInfo.status = Downloads.Status.STATUS_RUNNING;
+                downloadInfo.writeToDatabase();
+
+                DLogger.d(Utils.getDownloaderTAG(mRequest), "开始下载(%s)", mRequest.uri);
+                executeDownload(mRequest);
+                DLogger.d(Utils.getDownloaderTAG(mRequest), "结束下载(%s)", mRequest.uri);
 
                 downloadInfo.status = Downloads.Status.STATUS_SUCCESS;
-                downloadInfo.rangeBytes = downloadInfo.fileBytes;
-                downloadInfo.numFailed = 0;
-
-                return;
-            }
-
-            downloadInfo.status = Downloads.Status.STATUS_RUNNING;
-            downloadInfo.writeToDatabase();
-
-            DLogger.d(Utils.getDownloaderTAG(mRequest), "开始下载(%s)", mRequest.uri);
-            executeDownload(mRequest);
-            DLogger.d(Utils.getDownloaderTAG(mRequest), "结束下载(%s)", mRequest.uri);
-
-            downloadInfo.status = Downloads.Status.STATUS_SUCCESS;
+            } while (false);
         } catch (DownloadException e) {
             e.printStackTrace();
 

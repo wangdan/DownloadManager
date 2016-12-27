@@ -21,27 +21,27 @@ class FileManager {
         try {
             String suffix = temp ? Constants.TEMP_SUFFIX : "";
             File tempFile = new File(request.fileUri.getPath() + suffix);
-            long rangeBytes = request.downloadInfo.rangeBytes;
+//            long rangeBytes = request.downloadInfo.rangeBytes;
 
             if (tempFile.exists()) {
-                DLogger.v(Utils.getDownloaderTAG(request), "临时文件已存在");
-
-                // 临时文件长度和缓存数据不一致，删除缓存文件重新下载
-                if (tempFile.length() > 0 && tempFile.length() != rangeBytes) {
-                    DLogger.w(Utils.getDownloaderTAG(request), "临时文件长度和缓存数据长度不一致，file(%d), range(%d)", tempFile.length(), rangeBytes);
-
-                    if (tempFile.delete()) {
-                        DLogger.w(Utils.getDownloaderTAG(request), "删除临时文件");
-                    }
-                    else {
-                        DLogger.w(Utils.getDownloaderTAG(request), "删除临时文件失败");
-                    }
-
-                    request.downloadInfo.rangeBytes = 0;
-                }
-                else {
-                    DLogger.d(Utils.getDownloaderTAG(request), "文件断点下载，file(%d), range(%d)", tempFile.length(), rangeBytes);
-                }
+//                DLogger.v(Utils.getDownloaderTAG(request), "临时文件已存在");
+//
+//                // 临时文件长度和缓存数据不一致，删除缓存文件重新下载
+//                if (tempFile.length() > 0 && tempFile.length() != rangeBytes) {
+//                    DLogger.w(Utils.getDownloaderTAG(request), "临时文件长度和缓存数据长度不一致，file(%d), range(%d)", tempFile.length(), rangeBytes);
+//
+//                    if (tempFile.delete()) {
+//                        DLogger.w(Utils.getDownloaderTAG(request), "删除临时文件");
+//                    }
+//                    else {
+//                        DLogger.w(Utils.getDownloaderTAG(request), "删除临时文件失败");
+//                    }
+//
+//                    request.downloadInfo.rangeBytes = 0;
+//                }
+//                else {
+//                    DLogger.d(Utils.getDownloaderTAG(request), "文件断点下载，file(%d), range(%d)", tempFile.length(), rangeBytes);
+//                }
             }
             else {
                 // 创建父文件夹
