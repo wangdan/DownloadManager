@@ -9,6 +9,7 @@ import com.squareup.okhttp.Response;
 import org.aiwen.downloader.utils.Constants;
 import org.aiwen.downloader.utils.Utils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -265,11 +266,43 @@ public class DownloadThread implements Runnable {
 
             trace.benginRead();
             trace.beginSpeedCount();
-            while ((readLen = in.read(readBuffer)) != -1) {
-                out.write(readBuffer, 0, readLen);
 
-                downloadInfo.rangeBytes += readLen;
-                trace.receive(readLen);
+            byte[] largeBuffer = new byte[1024 * 128];
+            byte[] midBuffer = new byte[1024 * 32];
+            byte[] smallBuffer = new byte[1024 * 16];
+            byte[] b = smallBuffer;
+            ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
+            int count = 0;
+            long begin = Utils.now();
+            long writeTime = 0;
+            while (true) {
+                count++;
+
+                long start = Utils.now();
+
+//                readLen = in.read(readBuffer);
+//                if (readLen > 0) {
+//                    out.write(readBuffer, 0, readLen);
+//
+//                    downloadInfo.rangeBytes += readLen;
+//                    trace.receive(readLen);
+//                }
+
+                byteArrayOut.reset();
+                do {
+                    readLen = in.read(readBuffer);
+                    if (readLen > 0) {
+                        byteArrayOut.write(readBuffer, 0, readLen);
+                    }
+                } while (readLen > 0 && byteArrayOut.size() < b.length);
+
+                byte[] writeBuffer = byteArrayOut.toByteArray();
+                out.write(writeBuffer, 0, writeBuffer.length);
+                out.flush();
+
+                downloadInfo.rangeBytes += writeBuffer.length;
+                trace.receive(writeBuffer.length);
+
 
                 final long now = SystemClock.elapsedRealtime();
                 final long currentBytes = downloadInfo.rangeBytes;
@@ -294,7 +327,19 @@ public class DownloadThread implements Runnable {
                     }
                     downloadInfo.writeToDatabase();
                 }
+
+                long time = Utils.now() - start;
+                if (time > 0) {
+                    DLogger.e("DownloadTime", time + ", readLen = " + readLen);
+                    writeTime += time;
+                }
+
+                if (readLen == -1) {
+                    out.flush();
+                    break;
+                }
             }
+            DLogger.e("DownloadTime", "count = %d, 耗时 %d ms, writeTime = %d ms", count, Utils.now() - begin, writeTime);
             trace.endRead();
 
             out.flush();
